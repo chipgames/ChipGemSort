@@ -1,5 +1,5 @@
 {
-  "name": "ChipGemSort - 색상 정렬 퍼즐",
+  "name": "ChipGemSort - CHIP GAMES",
   "short_name": "ChipGemSort",
   "description": "무료 온라인 색상 정렬 퍼즐. 젬을 병에 나눠 담아 한 병에 한 색만!",
   "start_url": "/ChipGemSort/",
@@ -9,10 +9,28 @@
   "orientation": "any",
   "icons": [
     {
+      "src": "ChipGames_favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ChipGames_favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ChipGames_favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["games", "entertainment"],

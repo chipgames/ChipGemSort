@@ -51,14 +51,22 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   return (
     <header className="header" role="banner">
       <div className="header-inner">
-        <button
+        <div
           className="header-logo"
-          type="button"
           onClick={() => nav("stageSelect")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && nav("stageSelect")}
           aria-label={t("header.gameTitle")}
         >
-          {t("header.gameTitle")}
-        </button>
+          <img
+            src={`${import.meta.env.BASE_URL}ChipGames_Logo.png`}
+            alt={t("header.logo")}
+            className="header-logo-img"
+            decoding="async"
+          />
+          <span className="header-game-title">{t("header.gameTitle")}</span>
+        </div>
 
         <nav className="header-nav" aria-label="Main navigation">
           <button

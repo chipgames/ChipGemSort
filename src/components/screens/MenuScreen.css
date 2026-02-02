@@ -4,6 +4,18 @@
   padding: 24px;
 }
 
+.menu-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.menu-logo {
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+}
+
 .menu-content {
   text-align: center;
 }

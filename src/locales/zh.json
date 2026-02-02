@@ -1,7 +1,7 @@
 {
   "header": {
     "logo": "CHIP GAMES",
-    "gameTitle": "ChipGemSort",
+    "gameTitle": "颜色排序拼图",
     "playGame": "开始游戏",
     "guide": "指南",
     "help": "帮助",
@@ -17,8 +17,8 @@
     "copyright": "© ChipGames. All rights reserved."
   },
   "menu": {
-    "title": "ChipGemSort",
-    "subtitle": "颜色排序拼图",
+    "title": "颜色排序拼图",
+    "subtitle": "将宝石分装到试管中，一管一色！",
     "playGame": "开始游戏",
     "guide": "指南",
     "help": "帮助"

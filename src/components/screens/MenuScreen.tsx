@@ -12,8 +12,16 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onNavigate }) => {
 
   return (
     <div className="menu-screen">
+      <div className="menu-logo-wrap">
+        <img
+          src={`${import.meta.env.BASE_URL}ChipGames_Logo.png`}
+          alt={t("header.logo")}
+          className="menu-logo"
+          decoding="async"
+        />
+      </div>
       <div className="menu-content">
-        <h1 className="menu-title">{t("menu.title")}</h1>
+        <h1 className="menu-title">{t("header.gameTitle")}</h1>
         <p className="menu-subtitle">{t("menu.subtitle")}</p>
         <div className="menu-buttons">
           <button

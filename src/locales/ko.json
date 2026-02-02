@@ -1,7 +1,7 @@
 {
   "header": {
     "logo": "CHIP GAMES",
-    "gameTitle": "ChipGemSort",
+    "gameTitle": "색상 정렬 퍼즐",
     "playGame": "게임하기",
     "guide": "가이드",
     "help": "도움말",
@@ -17,8 +17,8 @@
     "copyright": "© ChipGames. All rights reserved."
   },
   "menu": {
-    "title": "ChipGemSort",
-    "subtitle": "색상 정렬 퍼즐",
+    "title": "색상 정렬 퍼즐",
+    "subtitle": "젬을 병에 나눠 담아 한 병에 한 색만!",
     "playGame": "게임하기",
     "guide": "가이드",
     "help": "도움말"

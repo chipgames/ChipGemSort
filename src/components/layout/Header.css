@@ -15,13 +15,31 @@
 }
 
 .header-logo {
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
   padding: 4px 8px;
+  background: none;
+  border: none;
+}
+
+.header-logo-img {
+  height: 40px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.header-game-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
 }
 
 .header-nav {

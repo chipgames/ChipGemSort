@@ -1,7 +1,7 @@
 {
   "header": {
     "logo": "CHIP GAMES",
-    "gameTitle": "ChipGemSort",
+    "gameTitle": "Color Sort Puzzle",
     "playGame": "Play",
     "guide": "Guide",
     "help": "Help",
@@ -17,8 +17,8 @@
     "copyright": "© ChipGames. All rights reserved."
   },
   "menu": {
-    "title": "ChipGemSort",
-    "subtitle": "Color Sort Puzzle",
+    "title": "Color Sort Puzzle",
+    "subtitle": "Sort gems into tubes—one color per tube!",
     "playGame": "Play Game",
     "guide": "Guide",
     "help": "Help"
