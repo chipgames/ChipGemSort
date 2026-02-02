@@ -1,11 +1,13 @@
-/** 정렬 퍼즐용 젬 색상 (ChipPuzzleGame과 유사 6색) */
+/** 정렬 퍼즐용 젬 색상 (2~8색 구간별 사용) */
 export type GemColor =
   | "red"
   | "yellow"
   | "blue"
   | "green"
   | "purple"
-  | "orange";
+  | "orange"
+  | "cyan"
+  | "pink";
 
 /** 튜브(병) 하나: 위에서부터 쌓인 젬 색 목록 */
 export interface Tube {

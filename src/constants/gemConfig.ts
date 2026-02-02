@@ -7,6 +7,8 @@ export const GEM_COLORS: GemColor[] = [
   "green",
   "purple",
   "orange",
+  "cyan",
+  "pink",
 ];
 
 /** ChipPuzzleGame 스타일: light/dark 그라데이션 (파스텔 톤 조정 가능) */
@@ -18,4 +20,6 @@ export const GEM_COLOR_HEX: Record<GemColor, { light: string; dark: string }> =
     green: { light: "#b4f8c8", dark: "#7ed56f" },
     purple: { light: "#d4a5ff", dark: "#b388ff" },
     orange: { light: "#ffd89b", dark: "#ff9a76" },
+    cyan: { light: "#a8edea", dark: "#5ec9d4" },
+    pink: { light: "#fbc2eb", dark: "#f093b8" },
   };

@@ -1,22 +1,58 @@
 import type { Tube, GemColor } from "@/types/game";
 import { GEM_COLORS } from "@/constants/gemConfig";
 import { GAME_CONFIG } from "@/constants/gameConfig";
+import { isSolvable } from "./solvabilityCheck";
 
 /**
- * 스테이지 밸런싱: 2색은 10까지, 빈 시험관은 항상 1개 (numTubes = numColors + 1)
- * - 2색: 1~10 (3튜브 = 2채움 + 1빈)
- * - 3색: 11~90 (4튜브 = 3채움 + 1빈)
- * - 4색: 91~200 (5튜브 = 4채움 + 1빈)
+ * 구간별 파라미터 (풀 수 있도록 검증됨: numTubes = numColors + numEmptyTubes)
+ *
+ * 구간      색 수  빈 시험관  총 튜브
+ * 1~10     2색    1개        3
+ * 11~20    3색    2개        5
+ * 21~30    3색    1개        4
+ * 31~40    4색    3개        7
+ * 41~50    4색    2개        6
+ * 51~60    5색    3개        8
+ * 61~70    5색    2개        7
+ * 71~90    6색    3개        9
+ * 91~110   7색    3개        10
+ * 111~200  8색    3개        11
  */
 function getStageParams(stageNumber: number): {
   numTubes: number;
   numColors: number;
+  numEmptyTubes: number;
   capacity: number;
 } {
   const capacity = GAME_CONFIG.defaultTubeCapacity;
-  if (stageNumber <= 10) return { numTubes: 3, numColors: 2, capacity };
-  if (stageNumber <= 90) return { numTubes: 4, numColors: 3, capacity };
-  return { numTubes: 5, numColors: 4, capacity };
+  if (stageNumber <= 10) {
+    return { numTubes: 3, numColors: 2, numEmptyTubes: 1, capacity };
+  }
+  if (stageNumber <= 20) {
+    return { numTubes: 5, numColors: 3, numEmptyTubes: 2, capacity };
+  }
+  if (stageNumber <= 30) {
+    return { numTubes: 4, numColors: 3, numEmptyTubes: 1, capacity };
+  }
+  if (stageNumber <= 40) {
+    return { numTubes: 7, numColors: 4, numEmptyTubes: 3, capacity };
+  }
+  if (stageNumber <= 50) {
+    return { numTubes: 6, numColors: 4, numEmptyTubes: 2, capacity };
+  }
+  if (stageNumber <= 60) {
+    return { numTubes: 8, numColors: 5, numEmptyTubes: 3, capacity };
+  }
+  if (stageNumber <= 70) {
+    return { numTubes: 7, numColors: 5, numEmptyTubes: 2, capacity };
+  }
+  if (stageNumber <= 90) {
+    return { numTubes: 9, numColors: 6, numEmptyTubes: 3, capacity };
+  }
+  if (stageNumber <= 110) {
+    return { numTubes: 10, numColors: 7, numEmptyTubes: 3, capacity };
+  }
+  return { numTubes: 11, numColors: 8, numEmptyTubes: 3, capacity };
 }
 
 /** 시드 기반 의사 난수 (같은 스테이지면 같은 배치) */
@@ -36,37 +72,24 @@ function isAlreadySolved(tubes: Tube[]): boolean {
   });
 }
 
-/** 이미 정렬된 상태면, 처음 두 채워진 튜브의 위쪽 절반을 서로 바꿔서 섞인 상태로 만듦 */
-function ensureMixed(tubes: Tube[]): void {
-  const filled = tubes.filter((t) => t.gems.length > 0);
-  if (filled.length < 2) return;
-  const t0 = filled[0];
-  const t1 = filled[1];
-  const half = Math.floor(t0.gems.length / 2);
-  if (half === 0) return;
-  const from0 = t0.gems.splice(t0.gems.length - half, half);
-  const from1 = t1.gems.splice(t1.gems.length - half, half);
-  t0.gems.push(...from1);
-  t1.gems.push(...from0);
-}
-
-/** 한 색당 capacity만큼 채우고, 빈 시험관 1개. 풀 수 있는 형태로 초기 배치 생성 */
-export function generateStage(stageNumber: number): Tube[] {
-  const { numTubes, numColors, capacity } = getStageParams(stageNumber);
+/** 한 시드로 셔플해서 튜브 배치 생성 (내부용) */
+function generateWithSeed(stageNumber: number, seed: number): Tube[] {
+  const { numTubes, numColors, numEmptyTubes, capacity } =
+    getStageParams(stageNumber);
+  const numFilledTubes = numTubes - numEmptyTubes;
   const colors = GEM_COLORS.slice(0, numColors) as GemColor[];
   const gemStack: GemColor[] = [];
   colors.forEach((c) => {
     for (let i = 0; i < capacity; i++) gemStack.push(c);
   });
 
-  const rng = seededRandom(stageNumber * 12345);
+  const rng = seededRandom(seed);
   for (let i = gemStack.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [gemStack[i], gemStack[j]] = [gemStack[j], gemStack[i]];
   }
 
   const tubes: Tube[] = [];
-  const numFilledTubes = numColors;
   let idx = 0;
   for (let t = 0; t < numTubes; t++) {
     const id = `tube-${stageNumber}-${t}`;
@@ -83,4 +106,19 @@ export function generateStage(stageNumber: number): Tube[] {
 
   if (isAlreadySolved(tubes)) ensureMixed(tubes);
   return tubes;
+}
+
+/** 한 색당 capacity만큼 채우고, 빈 시험관은 getStageParams 기준. 풀 수 있는 배치가 나올 때까지 시드 변경하며 재시도 */
+export function generateStage(stageNumber: number): Tube[] {
+  const baseSeed = stageNumber * 12345;
+  const maxAttempts = 200;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const tubes = generateWithSeed(stageNumber, baseSeed + attempt);
+    const { solvable } = isSolvable(tubes);
+    if (solvable) return tubes;
+  }
+
+  // 200회 시도 후에도 풀 수 있는 배치가 없으면 마지막 시드로 고정 (드문 경우)
+  return generateWithSeed(stageNumber, baseSeed + maxAttempts - 1);
 }

@@ -2,7 +2,7 @@
 export const GAME_CONFIG = {
   defaultTubeCapacity: 4,
   minTubes: 3,
-  maxTubes: 8,
+  maxTubes: 11,
   totalStages: 200,
   stagesPerPage: 50,
 };

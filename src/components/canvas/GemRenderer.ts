@@ -74,6 +74,8 @@ function getBorderColor(color: GemColor): string {
     green: "rgba(46, 204, 113, 0.9)",
     purple: "rgba(155, 89, 182, 0.9)",
     orange: "rgba(230, 126, 34, 0.9)",
+    cyan: "rgba(0, 188, 212, 0.9)",
+    pink: "rgba(233, 30, 99, 0.9)",
   };
   return map[color];
 }
@@ -136,6 +138,26 @@ function renderColorPattern(
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = "rgba(211, 84, 0, 0.5)";
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "cyan":
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0, 151, 167, 0.5)";
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "pink":
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+      const arm = s * 0.12;
+      ctx.fillRect(-arm * 0.4, -arm, arm * 0.8, arm * 2);
+      ctx.fillRect(-arm, -arm * 0.4, arm * 2, arm * 0.8);
+      ctx.fillStyle = "rgba(194, 24, 91, 0.5)";
       ctx.beginPath();
       ctx.arc(0, 0, s * 0.08, 0, Math.PI * 2);
       ctx.fill();
