@@ -1,0 +1,29 @@
+.help-screen {
+  width: 100%;
+  max-width: 560px;
+  padding: 24px;
+}
+
+.help-title {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.help-description {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.help-back {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.help-back:hover {
+  border-color: var(--accent-primary);
+}

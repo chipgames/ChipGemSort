@@ -1,0 +1,54 @@
+{
+  "header": {
+    "logo": "CHIP GAMES",
+    "gameTitle": "ChipGemSort",
+    "playGame": "プレイ",
+    "guide": "ガイド",
+    "help": "ヘルプ",
+    "about": "紹介",
+    "lightMode": "ライトモード",
+    "darkMode": "ダークモード",
+    "installApp": "アプリをインストール"
+  },
+  "footer": {
+    "navigation": "フッターメニュー",
+    "privacyPolicy": "プライバシーポリシー",
+    "contactUs": "お問い合わせ",
+    "copyright": "© ChipGames. All rights reserved."
+  },
+  "menu": {
+    "title": "ChipGemSort",
+    "subtitle": "カラーソートパズル",
+    "playGame": "ゲームをプレイ",
+    "guide": "ガイド",
+    "help": "ヘルプ"
+  },
+  "stageSelect": {
+    "title": "ステージ選択",
+    "page": "ページ"
+  },
+  "game": {
+    "moves": "手数",
+    "undo": "元に戻す",
+    "stage": "ステージ",
+    "complete": "クリア！",
+    "retry": "リトライ",
+    "nextStage": "次のステージ",
+    "back": "戻る"
+  },
+  "guide": {
+    "title": "ガイド",
+    "description": "ジェムを管から管へ移して、1本の管に1色だけにしましょう。",
+    "step1": "管をタップして選択し、移し先の管をタップします。",
+    "step2": "一番上のジェムだけ移動でき、空の管か同じ色の上にのみ移せます。",
+    "step3": "すべての管が1色で揃うとクリアです。"
+  },
+  "help": {
+    "title": "ヘルプ",
+    "description": "よくある質問とトラブルシューティングをご確認ください。"
+  },
+  "about": {
+    "title": "紹介",
+    "description": "ChipGemSortはカラーソートパズルです。ジェムを管に分けて1管1色に揃えましょう。"
+  }
+}
