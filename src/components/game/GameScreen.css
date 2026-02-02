@@ -6,30 +6,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: clamp(12px, 2.5vmin, 24px);
+  padding-left: max(clamp(12px, 2.5vmin, 24px), env(safe-area-inset-left));
+  padding-right: max(clamp(12px, 2.5vmin, 24px), env(safe-area-inset-right));
+  padding-bottom: max(clamp(12px, 2.5vmin, 24px), env(safe-area-inset-bottom));
   position: relative;
 }
 
-.game-screen-header {
+.game-board {
+  width: 100%;
+  min-width: 280px;
+  max-width: min(1200px, 94vw);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.game-screen-back {
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-.game-screen-back:hover {
-  border-color: var(--accent-primary);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
 }
 
 .game-screen-complete {
@@ -40,31 +31,46 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 24px;
+  gap: clamp(20px, 4vmin, 28px);
+  padding: clamp(20px, 4vmin, 32px);
+  backdrop-filter: blur(6px);
 }
 
 .game-screen-complete p {
-  font-size: 1.5rem;
+  font-size: clamp(1.35rem, 4vmin, 1.75rem);
   font-weight: 700;
   color: var(--accent-success);
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .game-screen-complete-actions {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: clamp(10px, 2vmin, 14px);
+  justify-content: center;
 }
 
 .game-screen-complete-actions button {
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: clamp(10px, 2vmin, 14px) clamp(20px, 4vmin, 28px);
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2vmin, 1rem);
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.game-screen-complete-actions button:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 .game-screen-complete-actions button.primary {
   background: var(--gradient-primary);
   border: none;
+  color: #fff;
+}
+.game-screen-complete-actions button.primary:hover {
+  box-shadow: 0 4px 16px rgba(124, 138, 255, 0.35);
 }

@@ -180,16 +180,37 @@ const MAX_WIDTH = 1200;
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = Math.floor(MIN_WIDTH / ASPECT_RATIO);
 
+/** 헤더 높이: 게임 영역이 주인공이 되도록 얇게 (데스크/모바일 균형) */
+function getHeaderHeight(canvasHeight: number): number {
+  return Math.round(Math.max(28, Math.min(42, canvasHeight * 0.065)));
+}
+
 interface GameCanvasProps {
   tubes: Tube[];
   selectedTubeIndex: number | null;
   onTubeClick: (index: number) => void;
+  stageNumber: number;
+  moves: number;
+  onBack: () => void;
+  onRetry: () => void;
+  stageLabel: string;
+  movesLabel: string;
+  backLabel: string;
+  retryLabel: string;
 }
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
   tubes,
   selectedTubeIndex,
   onTubeClick,
+  stageNumber,
+  moves,
+  onBack,
+  onRetry,
+  stageLabel,
+  movesLabel,
+  backLabel,
+  retryLabel,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -235,10 +256,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
+    const headerHeight = getHeaderHeight(size.h);
+    const gameAreaH = size.h - headerHeight;
     const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
     const numTubes = tubes.length;
     const availableW = size.w * 0.82;
-    const availableH = size.h * 0.8;
+    const availableH = gameAreaH * 0.8;
     const gapRatio = 0.28;
     const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
     const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
@@ -247,7 +270,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const totalW = numTubes * cellSize + (numTubes - 1) * gap;
     const totalH = cellSize * capacity;
     const marginX = (size.w - totalW) / 2;
-    const marginY = (size.h - totalH) / 2;
+    const marginY = headerHeight + (gameAreaH - totalH) / 2;
     const topPadding = 0.22;
     const bottomPadding = 0.5;
     const contentTop = marginY + topPadding * cellSize;
@@ -257,8 +280,164 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       getComputedStyle(document.documentElement)
         .getPropertyValue("--canvas-bg")
         .trim() || "#1a1a1a";
+    const textColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--text-primary")
+        .trim() || "#1a1a1a";
+    const textSecondary =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--text-secondary")
+        .trim() || textColor;
+    const borderColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--border-color")
+        .trim() || "rgba(0,0,0,0.2)";
+    const accentPrimary =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent-primary")
+        .trim() || "#7c8aff";
+    const bgCard =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--bg-card")
+        .trim() || "rgba(255,255,255,0.95)";
+
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, size.w, size.h);
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, size.w, headerHeight);
+    const headerGrad = ctx.createLinearGradient(0, 0, 0, headerHeight);
+    headerGrad.addColorStop(0, "rgba(255,255,255,0.06)");
+    headerGrad.addColorStop(0.5, "rgba(255,255,255,0.02)");
+    headerGrad.addColorStop(1, "transparent");
+    ctx.fillStyle = headerGrad;
+    ctx.fillRect(0, 0, size.w, headerHeight);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = Math.max(1, size.w / 600);
+    ctx.beginPath();
+    ctx.moveTo(0, headerHeight);
+    ctx.lineTo(size.w, headerHeight);
+    ctx.stroke();
+
+    const base = Math.min(size.w, size.h);
+    const titleFont = Math.max(11, Math.min(16, Math.round(base * 0.042)));
+    const btnFont = Math.max(10, Math.min(14, Math.round(base * 0.036)));
+    const padH = size.w * 0.032;
+    const fontFamily =
+      "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+    ctx.font = `600 ${btnFont}px ${fontFamily}`;
+    const minWRetry = ctx.measureText(retryLabel).width + 44;
+    ctx.font = `500 ${btnFont}px ${fontFamily}`;
+    const minWBack = ctx.measureText(backLabel).width + 44;
+    const btnWidth = Math.max(
+      88,
+      Math.round(size.w * 0.2),
+      Math.ceil(minWRetry),
+      Math.ceil(minWBack)
+    );
+    const btnGap = size.w * 0.02;
+    const btnTop = headerHeight * 0.1;
+    const btnH = headerHeight * 0.8;
+    const btnRadius = Math.min(10, btnH * 0.4);
+
+    const textShadowBlur = Math.max(2, size.w / 350);
+    const textShadowY = 1;
+
+    const drawRoundRect = (
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      r: number
+    ) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    };
+
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.08)";
+    ctx.shadowBlur = textShadowBlur;
+    ctx.shadowOffsetY = textShadowY;
+    ctx.font = `600 ${titleFont}px ${fontFamily}`;
+    ctx.fillStyle = textColor;
+    ctx.fillText(`${stageLabel} ${stageNumber}`, padH, headerHeight / 2);
+    ctx.font = `500 ${titleFont}px ${fontFamily}`;
+    ctx.fillStyle = textSecondary;
+    const movesX = padH + size.w * 0.24;
+    ctx.fillText(`${movesLabel}: ${moves}`, movesX, headerHeight / 2);
+    ctx.restore();
+
+    const retryLeft = size.w - padH - btnWidth;
+    const backLeft = size.w - padH - btnWidth - btnGap - btnWidth;
+
+    const shadowBlur = Math.max(4, size.w / 120);
+    const shadowY = Math.max(2, size.w / 400);
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.12)";
+    ctx.shadowBlur = shadowBlur;
+    ctx.shadowOffsetY = shadowY;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = Math.max(1, size.w / 450);
+    ctx.fillStyle = bgCard;
+    drawRoundRect(backLeft, btnTop, btnWidth, btnH, btnRadius);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.1)";
+    ctx.shadowBlur = textShadowBlur;
+    ctx.shadowOffsetY = textShadowY;
+    ctx.font = `500 ${btnFont}px ${fontFamily}`;
+    ctx.fillStyle = textColor;
+    ctx.textAlign = "center";
+    ctx.fillText(backLabel, backLeft + btnWidth / 2, headerHeight / 2);
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.18)";
+    ctx.shadowBlur = shadowBlur;
+    ctx.shadowOffsetY = shadowY;
+    const retryGrad = ctx.createLinearGradient(
+      retryLeft,
+      btnTop,
+      retryLeft + btnWidth,
+      btnTop + btnH
+    );
+    retryGrad.addColorStop(0, accentPrimary);
+    retryGrad.addColorStop(1, accentPrimary);
+    ctx.fillStyle = retryGrad;
+    drawRoundRect(retryLeft, btnTop, btnWidth, btnH, btnRadius);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = Math.max(1, size.w / 500);
+    drawRoundRect(retryLeft, btnTop, btnWidth, btnH, btnRadius);
+    ctx.stroke();
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(0,0,0,0.2)";
+    ctx.shadowBlur = textShadowBlur;
+    ctx.shadowOffsetY = textShadowY;
+    ctx.font = `600 ${btnFont}px ${fontFamily}`;
+    ctx.fillStyle = "#fff";
+    ctx.fillText(retryLabel, retryLeft + btnWidth / 2, headerHeight / 2);
+    ctx.restore();
+
+    ctx.textAlign = "left";
 
     const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
 
@@ -294,20 +473,34 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         );
       }
     });
-  }, [size, tubes, selectedTubeIndex]);
+  }, [
+    size,
+    tubes,
+    selectedTubeIndex,
+    stageNumber,
+    moves,
+    stageLabel,
+    movesLabel,
+    backLabel,
+    retryLabel,
+  ]);
 
   const getTubeIndexFromClientXY = useCallback(
-    (clientX: number, _clientY: number): number | null => {
+    (clientX: number, clientY: number): number | null => {
       const canvas = canvasRef.current;
       if (!canvas || tubes.length === 0) return null;
       const rect = canvas.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
       if (w <= 0 || h <= 0) return null;
+      const y = clientY - rect.top;
+      const headerHeight = getHeaderHeight(h);
+      if (y < headerHeight) return null;
+      const gameAreaH = h - headerHeight;
       const numTubes = tubes.length;
       const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
       const availableW = w * 0.82;
-      const availableH = h * 0.8;
+      const availableH = gameAreaH * 0.8;
       const gapRatio = 0.28;
       const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
       const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
@@ -326,16 +519,62 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     [tubes.length]
   );
 
+  const getHeaderHit = useCallback(
+    (clientX: number, clientY: number): "back" | "retry" | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const headerHeight = getHeaderHeight(h);
+      if (y < 0 || y >= headerHeight) return null;
+      const padH = w * 0.032;
+      const btnWidth = Math.max(96, Math.round(w * 0.2));
+      const btnGap = w * 0.02;
+      const btnTop = headerHeight * 0.1;
+      const btnH = headerHeight * 0.8;
+      const retryLeft = w - padH - btnWidth;
+      const backLeft = w - padH - btnWidth - btnGap - btnWidth;
+      if (
+        x >= backLeft &&
+        x < backLeft + btnWidth &&
+        y >= btnTop &&
+        y < btnTop + btnH
+      )
+        return "back";
+      if (
+        x >= retryLeft &&
+        x < retryLeft + btnWidth &&
+        y >= btnTop &&
+        y < btnTop + btnH
+      )
+        return "retry";
+      return null;
+    },
+    []
+  );
+
   const lastHandledRef = useRef(0);
   const handlePointer = useCallback(
     (clientX: number, clientY: number) => {
       const now = Date.now();
       if (now - lastHandledRef.current < 150) return;
       lastHandledRef.current = now;
+      const headerHit = getHeaderHit(clientX, clientY);
+      if (headerHit === "back") {
+        onBack();
+        return;
+      }
+      if (headerHit === "retry") {
+        onRetry();
+        return;
+      }
       const ti = getTubeIndexFromClientXY(clientX, clientY);
       if (ti !== null) onTubeClick(ti);
     },
-    [getTubeIndexFromClientXY, onTubeClick]
+    [getHeaderHit, getTubeIndexFromClientXY, onTubeClick, onBack, onRetry]
   );
 
   return (

@@ -70,24 +70,30 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setCompleted(false);
   }, [stageNumber]);
 
+  const handleRetry = useCallback(() => {
+    setTubes(generateStage(stageNumber));
+    setSelectedTubeIndex(null);
+    setMoves(0);
+    setCompleted(false);
+  }, [stageNumber]);
+
   return (
     <div className="game-screen">
-      <div className="game-screen-header">
-        <span>
-          {t("game.stage")} {stageNumber}
-        </span>
-        <span>
-          {t("game.moves")}: {moves}
-        </span>
-        <button type="button" className="game-screen-back" onClick={onBack}>
-          {t("game.back")}
-        </button>
+      <div className="game-board">
+        <GameCanvas
+          tubes={tubes}
+          selectedTubeIndex={selectedTubeIndex}
+          onTubeClick={handleTubeClick}
+          stageNumber={stageNumber}
+          moves={moves}
+          onBack={onBack}
+          onRetry={handleRetry}
+          stageLabel={t("game.stage")}
+          movesLabel={t("game.moves")}
+          backLabel={t("game.back")}
+          retryLabel={t("game.retry")}
+        />
       </div>
-      <GameCanvas
-        tubes={tubes}
-        selectedTubeIndex={selectedTubeIndex}
-        onTubeClick={handleTubeClick}
-      />
       {completed && (
         <div className="game-screen-complete">
           <p>{t("game.complete")}</p>
