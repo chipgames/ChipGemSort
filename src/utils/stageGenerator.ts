@@ -72,6 +72,20 @@ function isAlreadySolved(tubes: Tube[]): boolean {
   });
 }
 
+/** 이미 정렬된 상태면, 처음 두 채워진 튜브의 위쪽 절반을 서로 바꿔서 섞인 상태로 만듦 */
+function ensureMixed(tubes: Tube[]): void {
+  const filled = tubes.filter((t) => t.gems.length > 0);
+  if (filled.length < 2) return;
+  const t0 = filled[0];
+  const t1 = filled[1];
+  const half = Math.floor(t0.gems.length / 2);
+  if (half === 0) return;
+  const from0 = t0.gems.splice(t0.gems.length - half, half);
+  const from1 = t1.gems.splice(t1.gems.length - half, half);
+  t0.gems.push(...from1);
+  t1.gems.push(...from0);
+}
+
 /** 한 시드로 셔플해서 튜브 배치 생성 (내부용) */
 function generateWithSeed(stageNumber: number, seed: number): Tube[] {
   const { numTubes, numColors, numEmptyTubes, capacity } =
