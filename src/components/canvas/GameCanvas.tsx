@@ -26,7 +26,7 @@ function tubePath(
   ctx.quadraticCurveTo(x, y, x + topR, y);
 }
 
-/** 투명 유리 시험관 형태로 튜브 영역 그리기 (참고 이미지: 두꺼운 유리, 림, 하이라이트·그림자로 시인성 강화) */
+/** 투명 유리 시험관: 투명도 + 빛 반사 그라데이션으로 유리감 강화 */
 function drawTube(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -44,24 +44,44 @@ function drawTube(
   ctx.beginPath();
   tubePath(ctx, x + shadowOff, y + shadowOff, w, h, topR, r);
   ctx.closePath();
-  ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
   ctx.fill();
 
-  // 2) 시험관 몸통
+  // 2) 시험관 몸통 — 투명하게 (배경이 비치도록)
   ctx.beginPath();
   tubePath(ctx, x, y, w, h, topR, r);
   ctx.closePath();
-
-  // 유리 채우기: 푸르스름한 흰색 톤 + 시인성 위해 조금 더 진하게
-  ctx.fillStyle = "rgba(220, 230, 255, 0.14)";
+  const bodyGrad = ctx.createLinearGradient(x, y, x, y + h);
+  bodyGrad.addColorStop(0, "rgba(255, 255, 255, 0.05)");
+  bodyGrad.addColorStop(0.3, "rgba(240, 248, 255, 0.035)");
+  bodyGrad.addColorStop(0.6, "rgba(230, 240, 255, 0.025)");
+  bodyGrad.addColorStop(1, "rgba(210, 225, 240, 0.04)");
+  ctx.fillStyle = bodyGrad;
   ctx.fill();
 
-  // 3) 바깥쪽 테두리 (유리 두께 느낌, 라이트/다크 배경 모두에서 보이도록)
-  ctx.strokeStyle = "rgba(90, 100, 130, 0.55)";
-  ctx.lineWidth = 3;
+  // 3) 왼쪽 빛 반사 — 시험관 절반(50%) 너비, 그라데이션이 확실히 보이도록 강도 상향
+  ctx.beginPath();
+  tubePath(ctx, x, y, w, h, topR, r);
+  ctx.closePath();
+  const reflectWidth = w * 0.5;
+  const reflectGrad = ctx.createLinearGradient(x, y, x + reflectWidth, y);
+  reflectGrad.addColorStop(0, "rgba(255, 255, 255, 0.42)");
+  reflectGrad.addColorStop(0.15, "rgba(255, 255, 255, 0.3)");
+  reflectGrad.addColorStop(0.35, "rgba(255, 255, 255, 0.15)");
+  reflectGrad.addColorStop(0.55, "rgba(255, 255, 255, 0.05)");
+  reflectGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = reflectGrad;
+  ctx.fill();
+
+  // 4) 바깥쪽 테두리 (유리 두께, 투명감 유지)
+  ctx.beginPath();
+  tubePath(ctx, x, y, w, h, topR, r);
+  ctx.closePath();
+  ctx.strokeStyle = "rgba(100, 115, 145, 0.38)";
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // 4) 안쪽 밝은 테두리 (유리 림)
+  // 5) 안쪽 밝은 테두리 (유리 림)
   ctx.beginPath();
   tubePath(
     ctx,
@@ -77,7 +97,7 @@ function drawTube(
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // 5) 입구 림: 바깥쪽 어두운 선 + 안쪽 흰색 하이라이트 (두께 강조)
+  // 6) 입구 림: 바깥쪽 어두운 선 + 안쪽 흰색 하이라이트 (두께 강조)
   ctx.beginPath();
   ctx.moveTo(x + topR, y);
   ctx.lineTo(x + w - topR, y);
@@ -91,20 +111,19 @@ function drawTube(
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // 6) 왼쪽 가장자리 하이라이트 (유리 반사, 참고 이미지처럼 뚜렷하게)
-  const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, "rgba(255, 255, 255, 0.45)");
-  grad.addColorStop(0.25, "rgba(255, 255, 255, 0.2)");
-  grad.addColorStop(0.6, "rgba(255, 255, 255, 0.06)");
-  grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 3;
+  // 7) 왼쪽 가장자리 보조 하이라이트 (얇은 선은 최소화 — 넓은 그라데이션이 주인상)
+  const edgeGrad = ctx.createLinearGradient(x, y, x, y + h);
+  edgeGrad.addColorStop(0, "rgba(255, 255, 255, 0.25)");
+  edgeGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.08)");
+  edgeGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.strokeStyle = edgeGrad;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(x + 2.5, y + topR);
-  ctx.lineTo(x + 2.5, y + h - r);
+  ctx.moveTo(x + 2, y + topR);
+  ctx.lineTo(x + 2, y + h - r);
   ctx.stroke();
 
-  // 7) 둥근 바닥 하이라이트 (유리 두께)
+  // 8) 둥근 바닥 하이라이트 (유리 두께)
   ctx.beginPath();
   ctx.ellipse(
     x + w / 2,
@@ -184,9 +203,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const numTubes = tubes.length;
     const availableW = size.w * 0.82;
     const availableH = size.h * 0.8;
-    const cellSize = Math.min(availableW / numTubes, availableH / capacity);
+    const gapRatio = 0.28;
+    const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+    const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
+    const gap = cellSize * gapRatio;
     const gemSize = cellSize * 0.78;
-    const totalW = cellSize * numTubes;
+    const totalW = numTubes * cellSize + (numTubes - 1) * gap;
     const totalH = cellSize * capacity;
     const marginX = (size.w - totalW) / 2;
     const marginY = (size.h - totalH) / 2;
@@ -202,23 +224,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, size.w, size.h);
 
+    const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
+
     // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
     tubes.forEach((tube, ti) => {
-      const tubeLeft = marginX + ti * cellSize;
+      const left = tubeLeft(ti);
       const tubeTop = marginY;
       const tubeW = cellSize;
       const tubeH = cellSize * capacity;
-      drawTube(ctx, tubeLeft + 3, tubeTop + 3, tubeW - 6, tubeH - 6);
+      drawTube(ctx, left + 3, tubeTop + 3, tubeW - 6, tubeH - 6);
     });
 
     // 2) 젬 그리기 (contentTop~contentBottom 안에 넣어 시험관 밖으로 안 나가게)
     const slotHeight =
       (contentBottom - contentTop - gemSize) / Math.max(1, capacity - 1);
     tubes.forEach((tube, ti) => {
-      const baseX = marginX + ti * cellSize + (cellSize - gemSize) / 2;
+      const left = tubeLeft(ti);
+      const baseX = left + (cellSize - gemSize) / 2;
       const baseY = contentBottom - gemSize / 2;
-      const tubeLeft = marginX + ti * cellSize;
-      const tubeTop = marginY;
 
       tube.gems.forEach((color, gi) => {
         const y = baseY - gi * slotHeight;
@@ -229,8 +252,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         ctx.strokeStyle = "var(--accent-primary)";
         ctx.lineWidth = 4;
         ctx.strokeRect(
-          tubeLeft - 2,
-          tubeTop - 2,
+          left - 2,
+          marginY - 2,
           cellSize + 4,
           cellSize * capacity + 4
         );
@@ -248,14 +271,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       if (w <= 0 || h <= 0) return null;
       const numTubes = tubes.length;
       const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
-      const availableW = w * 0.9;
-      const availableH = h * 0.85;
-      const cellSize = Math.min(availableW / numTubes, availableH / capacity);
-      const totalW = cellSize * numTubes;
+      const availableW = w * 0.82;
+      const availableH = h * 0.8;
+      const gapRatio = 0.28;
+      const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+      const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
+      const gap = cellSize * gapRatio;
+      const totalW = numTubes * cellSize + (numTubes - 1) * gap;
       const marginX = (w - totalW) / 2;
       const x = clientX - rect.left;
       for (let ti = 0; ti < numTubes; ti++) {
-        const left = marginX + ti * cellSize;
+        const left = marginX + ti * (cellSize + gap);
         if (x >= left && x <= left + cellSize) {
           return ti;
         }
