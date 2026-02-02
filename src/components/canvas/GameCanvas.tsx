@@ -140,6 +140,42 @@ function drawTube(
 
   ctx.restore();
 }
+
+/** 선택된 시험관: 시험관 윤곽을 따르는 불빛(글로우) 테두리 */
+function drawTubeSelectionGlow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): void {
+  const r = Math.min(w * 0.45, h * 0.12);
+  const topR = Math.min(w * 0.2, 6);
+  const accent =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--accent-primary")
+      .trim() || "#a8b5ff";
+
+  ctx.save();
+
+  ctx.beginPath();
+  tubePath(ctx, x, y, w, h, topR, r);
+  ctx.closePath();
+
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 32;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 const MAX_WIDTH = 1200;
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = Math.floor(MIN_WIDTH / ASPECT_RATIO);
@@ -227,7 +263,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
 
     // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
-    tubes.forEach((tube, ti) => {
+    tubes.forEach((_, ti) => {
       const left = tubeLeft(ti);
       const tubeTop = marginY;
       const tubeW = cellSize;
@@ -249,13 +285,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       });
 
       if (selectedTubeIndex === ti) {
-        ctx.strokeStyle = "var(--accent-primary)";
-        ctx.lineWidth = 4;
-        ctx.strokeRect(
-          left - 2,
-          marginY - 2,
-          cellSize + 4,
-          cellSize * capacity + 4
+        drawTubeSelectionGlow(
+          ctx,
+          left + 3,
+          marginY + 3,
+          cellSize - 6,
+          cellSize * capacity - 6
         );
       }
     });
