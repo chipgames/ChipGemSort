@@ -1,0 +1,2 @@
+# Placeholder - Add your AdSense ads.txt content when approved
+google.com, pub-2533613198240039, DIRECT, f08c47fec0942fa0
