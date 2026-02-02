@@ -5,6 +5,7 @@ import type { GameProgress } from "@/types/storage";
 import type { GameScreen } from "@/types/ui";
 import { GAME_CONFIG } from "@/constants/gameConfig";
 import { PROGRESS_KEY } from "@/components/game/gameBoardStorage";
+import { StageSelectCanvas } from "@/components/canvas/StageSelectCanvas";
 import "./StageSelectScreen.css";
 
 interface StageSelectScreenProps {
@@ -40,67 +41,22 @@ const StageSelectScreen: React.FC<StageSelectScreenProps> = ({
     }
   }, [currentScreen, stagesPerPage]);
 
-  const handleStageClick = (stageNumber: number) => {
-    if (stageNumber <= unlockedStages) onStartStage(stageNumber);
-  };
-
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  const startStage = (currentPage - 1) * stagesPerPage + 1;
-  const endStage = Math.min(startStage + stagesPerPage - 1, totalStages);
-
   return (
     <div className="stage-select-screen">
-      <div className="stage-select-header">
-        <h2 className="stage-select-title">{t("stageSelect.title")}</h2>
-      </div>
-      <div className="stage-grid">
-        {Array.from({ length: endStage - startStage + 1 }, (_, i) => {
-          const num = startStage + i;
-          const isUnlocked = num <= unlockedStages;
-          return (
-            <button
-              key={num}
-              type="button"
-              className={`stage-card ${isUnlocked ? "unlocked" : "locked"}`}
-              onClick={() => handleStageClick(num)}
-              disabled={!isUnlocked}
-            >
-              <span className="stage-number">{num}</span>
-              {!isUnlocked && (
-                <span className="stage-lock" aria-hidden>
-                  🔒
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      <div className="pagination-container">
-        <span className="pagination-info">
-          {t("stageSelect.page")} {currentPage} / {totalPages}
-        </span>
-        <div className="pagination">
-          <button
-            type="button"
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            «
-          </button>
-          <button
-            type="button"
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            »
-          </button>
-        </div>
-      </div>
+      <StageSelectCanvas
+        title={t("stageSelect.title")}
+        unlockedStages={unlockedStages}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalStages={totalStages}
+        stagesPerPage={stagesPerPage}
+        onStartStage={onStartStage}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 };
