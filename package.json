@@ -1,12 +1,13 @@
 {
   "name": "chip-gem-sort",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && npx gh-pages -d dist",
+    "version:bump": "npm version patch --no-git-tag-version",
+    "deploy": "npm run version:bump && npm run build && npx gh-pages -d dist",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {

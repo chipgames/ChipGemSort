@@ -41,7 +41,8 @@ npm run build
 npm run deploy
 ```
 
-- 내부 동작: `npm run build` → `npx gh-pages -d dist`
+- 내부 동작: **패치 버전 자동 증가** → `npm run build` → `npx gh-pages -d dist`
+- `package.json`의 `version`이 배포마다 자동으로 올라갑니다 (예: 1.0.0 → 1.0.1). Git 태그/커밋은 생성하지 않습니다.
 - `dist` 내용이 **gh-pages** 브랜치로 푸시되고, GitHub Pages가 해당 브랜치를 사용해 사이트를 서빙합니다.
 
 ### 3-2. 빌드와 배포를 나눠서 실행
@@ -82,13 +83,21 @@ npx gh-pages -d dist
 
 ---
 
-## 7. 요약
+## 7. 버전 자동 증가
 
-| 단계                      | 명령                   |
-| ------------------------- | ---------------------- |
-| 의존성 설치               | `npm install`          |
-| 빌드만                    | `npm run build`        |
-| 빌드 + 배포               | `npm run deploy`       |
-| 배포만 (이미 빌드된 경우) | `npx gh-pages -d dist` |
+- **`npm run deploy`** 실행 시 `npm run version:bump`가 먼저 실행되어 **패치 버전**이 1씩 올라갑니다.
+- 별도 실행: `npm run version:bump` (minor/major는 `npm version minor --no-git-tag-version` 등으로 수동 실행 가능)
+
+---
+
+## 8. 요약
+
+| 단계                              | 명령                   |
+| --------------------------------- | ---------------------- |
+| 의존성 설치                       | `npm install`          |
+| 버전만 올리기 (패치)              | `npm run version:bump` |
+| 빌드만                            | `npm run build`        |
+| 빌드 + 배포 (버전 자동 증가 포함) | `npm run deploy`       |
+| 배포만 (이미 빌드된 경우)         | `npx gh-pages -d dist` |
 
 배포 후 접속: **https://\<사용자명\>.github.io/ChipGemSort/**
