@@ -82,7 +82,10 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <SEOHead />
       <OfflineBanner />
-      <div className="app-container">
+      <div
+        className="app-container"
+        data-ui-hidden={isUIHidden ? "true" : undefined}
+      >
         {!isUIHidden && (
           <Header onNavigate={setCurrentScreen} currentScreen={currentScreen} />
         )}

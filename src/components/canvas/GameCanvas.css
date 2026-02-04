@@ -15,7 +15,7 @@
   position: relative;
 }
 
-/* 모바일 가로: 높이 제한 시 높이 기준으로 16:9 유지(래터박스), 스크롤 방지 */
+/* 모바일 가로: 높이 제한 시 높이 기준으로 16:9 유지(스테이지 선택과 동일), 스크롤 방지 */
 @media (max-height: 560px) {
   .game-canvas-wrapper {
     width: auto;
@@ -25,6 +25,15 @@
     min-width: 280px;
     aspect-ratio: 16 / 9;
     min-height: 0;
+    flex-shrink: 0;
+  }
+}
+
+/* 메뉴 숨김 시: 가용 공간을 16:9 비율에 맞춰 꽉 채움 */
+@media (max-height: 560px) {
+  .app-container[data-ui-hidden="true"] .game-canvas-wrapper {
+    height: min(95dvh, 95vh, 100%);
+    max-height: min(95dvh, 95vh, 100%);
   }
 }
 

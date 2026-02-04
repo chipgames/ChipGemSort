@@ -24,6 +24,14 @@
   }
 }
 
+/* 메뉴 숨김 시: 가용 공간을 16:9 비율에 맞춰 꽉 채움 */
+@media (max-height: 560px) {
+  .app-container[data-ui-hidden="true"] .stage-select-canvas-wrapper {
+    height: min(95dvh, 95vh, 100%);
+    max-height: min(95dvh, 95vh, 100%);
+  }
+}
+
 .stage-select-canvas {
   display: block;
   width: 100%;
