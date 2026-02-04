@@ -5,6 +5,19 @@
   padding: 12px 20px;
 }
 
+@media (max-height: 560px) {
+  .footer {
+    padding: 6px 12px;
+  }
+  .footer-inner {
+    gap: 4px;
+  }
+  .footer-link,
+  .footer-copyright {
+    font-size: 0.75rem;
+  }
+}
+
 .footer-inner {
   display: flex;
   align-items: center;

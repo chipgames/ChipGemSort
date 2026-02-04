@@ -7,4 +7,21 @@
   padding: 16px;
   overflow: auto;
   min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 모바일 가로: 자식이 가용 높이만 쓰도록 해 스크롤 제거 */
+@media (max-height: 560px) {
+  .game-container {
+    padding: 8px;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+  .game-container > * {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }

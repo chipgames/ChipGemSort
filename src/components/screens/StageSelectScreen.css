@@ -4,3 +4,15 @@
   padding: clamp(12px, 3vmin, 20px);
   margin: 0 auto;
 }
+
+@media (max-height: 560px) {
+  .stage-select-screen {
+    padding: 6px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .stage-select-screen > * {
+    max-height: 100%;
+    min-height: 0;
+  }
+}
