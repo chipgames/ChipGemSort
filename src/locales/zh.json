@@ -10,6 +10,14 @@
     "darkMode": "深色模式",
     "installApp": "安装应用"
   },
+  "orientation": {
+    "lock": "锁定屏幕",
+    "unlock": "解锁屏幕"
+  },
+  "sound": {
+    "on": "开启声音",
+    "off": "关闭声音"
+  },
   "footer": {
     "navigation": "页脚导航",
     "privacyPolicy": "隐私政策",

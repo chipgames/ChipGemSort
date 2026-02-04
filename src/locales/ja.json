@@ -10,6 +10,14 @@
     "darkMode": "ダークモード",
     "installApp": "アプリをインストール"
   },
+  "orientation": {
+    "lock": "画面固定",
+    "unlock": "固定解除"
+  },
+  "sound": {
+    "on": "音をオン",
+    "off": "音をオフ"
+  },
   "footer": {
     "navigation": "フッターメニュー",
     "privacyPolicy": "プライバシーポリシー",

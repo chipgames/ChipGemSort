@@ -10,6 +10,14 @@
     "darkMode": "다크 모드",
     "installApp": "앱으로 설치"
   },
+  "orientation": {
+    "lock": "화면 고정",
+    "unlock": "고정 해제"
+  },
+  "sound": {
+    "on": "소리 켜기",
+    "off": "소리 끄기"
+  },
   "footer": {
     "navigation": "하단 메뉴",
     "privacyPolicy": "개인정보처리방침",

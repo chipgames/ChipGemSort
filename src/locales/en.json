@@ -10,6 +10,14 @@
     "darkMode": "Dark mode",
     "installApp": "Install app"
   },
+  "orientation": {
+    "lock": "Lock Orientation",
+    "unlock": "Unlock Orientation"
+  },
+  "sound": {
+    "on": "Sound On",
+    "off": "Sound Off"
+  },
   "footer": {
     "navigation": "Footer navigation",
     "privacyPolicy": "Privacy Policy",

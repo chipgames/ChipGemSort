@@ -27,6 +27,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   );
   const [moves, setMoves] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [history, setHistory] = useState<Tube[][]>([]);
 
   const handleTubeClick = useCallback(
     (index: number) => {
@@ -41,6 +42,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
       }
       const next = pour(tubes, selectedTubeIndex, index);
       if (next) {
+        // 히스토리에 현재 상태 저장 (깊은 복사)
+        setHistory((h) => [
+          ...h,
+          tubes.map((t) => ({ ...t, gems: [...t.gems] })),
+        ]);
         setTubes(next);
         setMoves((m) => m + 1);
         if (isComplete(next)) {
@@ -68,6 +74,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setSelectedTubeIndex(null);
     setMoves(0);
     setCompleted(false);
+    setHistory([]);
   }, [stageNumber]);
 
   const handleRetry = useCallback(() => {
@@ -75,7 +82,17 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setSelectedTubeIndex(null);
     setMoves(0);
     setCompleted(false);
+    setHistory([]);
   }, [stageNumber]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length === 0 || completed) return;
+    const previous = history[history.length - 1];
+    setTubes(previous.map((t) => ({ ...t, gems: [...t.gems] })));
+    setHistory((h) => h.slice(0, -1));
+    setMoves((m) => Math.max(0, m - 1));
+    setSelectedTubeIndex(null);
+  }, [history, completed]);
 
   return (
     <div className="game-screen">
@@ -88,10 +105,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
           moves={moves}
           onBack={onBack}
           onRetry={handleRetry}
+          onUndo={handleUndo}
+          canUndo={history.length > 0 && !completed}
           stageLabel={t("game.stage")}
           movesLabel={t("game.moves")}
           backLabel={t("game.back")}
           retryLabel={t("game.retry")}
+          undoLabel={t("game.undo")}
         />
       </div>
       {completed && (

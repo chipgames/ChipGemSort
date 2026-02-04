@@ -193,10 +193,13 @@ interface GameCanvasProps {
   moves: number;
   onBack: () => void;
   onRetry: () => void;
+  onUndo?: () => void;
+  canUndo?: boolean;
   stageLabel: string;
   movesLabel: string;
   backLabel: string;
   retryLabel: string;
+  undoLabel: string;
 }
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -207,10 +210,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   moves,
   onBack,
   onRetry,
+  onUndo,
+  canUndo = false,
   stageLabel,
   movesLabel,
   backLabel,
   retryLabel,
+  undoLabel,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -336,22 +342,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.stroke();
 
     const base = Math.min(size.w, size.h);
+    const isMobile = size.w <= 600;
     const titleFont = Math.max(11, Math.min(16, Math.round(base * 0.042)));
     const btnFont = Math.max(10, Math.min(14, Math.round(base * 0.036)));
     const padH = size.w * 0.032;
     const fontFamily =
       "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
     ctx.font = `600 ${btnFont}px ${fontFamily}`;
-    const minWRetry = ctx.measureText(retryLabel).width + 44;
+    const minWRetry = ctx.measureText(retryLabel).width + (isMobile ? 24 : 44);
     ctx.font = `500 ${btnFont}px ${fontFamily}`;
-    const minWBack = ctx.measureText(backLabel).width + 44;
-    const btnWidth = Math.max(
-      88,
-      Math.round(size.w * 0.2),
-      Math.ceil(minWRetry),
-      Math.ceil(minWBack)
-    );
-    const btnGap = size.w * 0.02;
+    const minWBack = ctx.measureText(backLabel).width + (isMobile ? 24 : 44);
+    const minWUndo = onUndo
+      ? ctx.measureText(undoLabel).width + (isMobile ? 24 : 44)
+      : 0;
+    // 모바일에서는 버튼 너비를 줄임
+    const btnWidth = isMobile
+      ? Math.max(60, Math.ceil(Math.max(minWRetry, minWBack, minWUndo)))
+      : Math.max(
+          88,
+          Math.round(size.w * 0.2),
+          Math.ceil(minWRetry),
+          Math.ceil(minWBack),
+          Math.ceil(minWUndo)
+        );
+    const btnGap = isMobile ? size.w * 0.01 : size.w * 0.02;
     const btnTop = headerHeight * 0.1;
     const btnH = headerHeight * 0.8;
     const btnRadius = Math.min(10, btnH * 0.4);
@@ -390,12 +404,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.fillText(`${stageLabel} ${stageNumber}`, padH, headerHeight / 2);
     ctx.font = `500 ${titleFont}px ${fontFamily}`;
     ctx.fillStyle = textSecondary;
-    const movesX = padH + size.w * 0.24;
+    // 모바일에서는 이동 텍스트 위치를 조정하여 버튼과 겹치지 않도록
+    const movesX = isMobile ? padH + size.w * 0.18 : padH + size.w * 0.24;
     ctx.fillText(`${movesLabel}: ${moves}`, movesX, headerHeight / 2);
     ctx.restore();
 
     const retryLeft = size.w - padH - btnWidth;
     const backLeft = size.w - padH - btnWidth - btnGap - btnWidth;
+    const undoLeft = onUndo
+      ? size.w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
+      : backLeft;
 
     const shadowBlur = Math.max(4, size.w / 120);
     const shadowY = Math.max(2, size.w / 400);
@@ -421,6 +439,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.textAlign = "center";
     ctx.fillText(backLabel, backLeft + btnWidth / 2, headerHeight / 2);
     ctx.restore();
+
+    if (onUndo) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.12)";
+      ctx.shadowBlur = shadowBlur;
+      ctx.shadowOffsetY = shadowY;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = Math.max(1, size.w / 450);
+      ctx.fillStyle = canUndo ? bgCard : "rgba(128,128,128,0.3)";
+      drawRoundRect(undoLeft, btnTop, btnWidth, btnH, btnRadius);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.1)";
+      ctx.shadowBlur = textShadowBlur;
+      ctx.shadowOffsetY = textShadowY;
+      ctx.font = `500 ${btnFont}px ${fontFamily}`;
+      ctx.fillStyle = canUndo ? textColor : "rgba(128,128,128,0.6)";
+      ctx.textAlign = "center";
+      ctx.fillText(undoLabel, undoLeft + btnWidth / 2, headerHeight / 2);
+      ctx.restore();
+    }
 
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.18)";
@@ -507,6 +549,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     movesLabel,
     backLabel,
     retryLabel,
+    undoLabel,
+    onUndo,
+    canUndo,
   ]);
 
   const getTubeIndexFromClientXY = useCallback(
@@ -544,7 +589,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   );
 
   const getHeaderHit = useCallback(
-    (clientX: number, clientY: number): "back" | "retry" | null => {
+    (clientX: number, clientY: number): "back" | "retry" | "undo" | null => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
@@ -554,13 +599,33 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const y = clientY - rect.top;
       const headerHeight = getHeaderHeight(h);
       if (y < 0 || y >= headerHeight) return null;
+      const isMobile = w <= 600;
       const padH = w * 0.032;
-      const btnWidth = Math.max(96, Math.round(w * 0.2));
-      const btnGap = w * 0.02;
+      // 모바일에서는 버튼 크기를 줄임 (렌더링 로직과 동일하게)
+      const base = Math.min(w, h);
+      const btnFont = Math.max(10, Math.min(14, Math.round(base * 0.036)));
+      const fontFamily =
+        "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.font = `500 ${btnFont}px ${fontFamily}`;
+      const minWBack = ctx.measureText(backLabel).width + (isMobile ? 24 : 44);
+      const minWRetry =
+        ctx.measureText(retryLabel).width + (isMobile ? 24 : 44);
+      const minWUndo = onUndo
+        ? ctx.measureText(undoLabel).width + (isMobile ? 24 : 44)
+        : 0;
+      const btnWidth = isMobile
+        ? Math.max(60, Math.ceil(Math.max(minWRetry, minWBack, minWUndo)))
+        : Math.max(96, Math.round(w * 0.2));
+      const btnGap = isMobile ? w * 0.01 : w * 0.02;
       const btnTop = headerHeight * 0.1;
       const btnH = headerHeight * 0.8;
       const retryLeft = w - padH - btnWidth;
       const backLeft = w - padH - btnWidth - btnGap - btnWidth;
+      const undoLeft = onUndo
+        ? w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
+        : backLeft;
       if (
         x >= backLeft &&
         x < backLeft + btnWidth &&
@@ -575,9 +640,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         y < btnTop + btnH
       )
         return "retry";
+      if (
+        onUndo &&
+        canUndo &&
+        x >= undoLeft &&
+        x < undoLeft + btnWidth &&
+        y >= btnTop &&
+        y < btnTop + btnH
+      )
+        return "undo";
       return null;
     },
-    []
+    [onUndo, canUndo, backLabel, retryLabel, undoLabel]
   );
 
   const lastHandledRef = useRef(0);
@@ -595,10 +669,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         onRetry();
         return;
       }
+      if (headerHit === "undo" && onUndo) {
+        onUndo();
+        return;
+      }
       const ti = getTubeIndexFromClientXY(clientX, clientY);
       if (ti !== null) onTubeClick(ti);
     },
-    [getHeaderHit, getTubeIndexFromClientXY, onTubeClick, onBack, onRetry]
+    [
+      getHeaderHit,
+      getTubeIndexFromClientXY,
+      onTubeClick,
+      onBack,
+      onRetry,
+      onUndo,
+    ]
   );
 
   return (

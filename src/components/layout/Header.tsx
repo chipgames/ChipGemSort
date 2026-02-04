@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/ui/LanguageSelector";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import OrientationLock from "@/components/ui/OrientationLock";
+import SoundToggle from "@/components/ui/SoundToggle";
 import type { GameScreen } from "@/types/ui";
 import "./Header.css";
 
@@ -109,6 +111,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         </nav>
 
         <div className="header-actions">
+          <OrientationLock />
+          <SoundToggle />
           <ThemeToggle />
           <LanguageSelector />
         </div>
