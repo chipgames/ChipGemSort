@@ -98,6 +98,59 @@
   background: var(--bg-glass);
 }
 
+.header-install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-glass);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.header-install-banner-text {
+  color: var(--text-secondary);
+}
+
+.header-install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-install-banner-install {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--gradient-primary);
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.header-install-banner-install:hover {
+  opacity: 0.95;
+  box-shadow: 0 2px 8px rgba(124, 138, 255, 0.35);
+}
+
+.header-install-banner-dismiss {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.header-install-banner-dismiss:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
 @media (max-width: 768px) {
   .header-nav,
   .header-actions {
@@ -108,5 +161,9 @@
   }
   .header-mobile-nav {
     display: flex;
+  }
+  .header-install-banner {
+    flex-direction: column;
+    text-align: center;
   }
 }

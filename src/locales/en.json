@@ -8,7 +8,12 @@
     "about": "About",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
-    "installApp": "Install app"
+    "installApp": "Install app",
+    "installBannerText": "Install the app for a smoother experience",
+    "installBannerDismiss": "Dismiss"
+  },
+  "offline": {
+    "message": "You're offline. Some features may be limited."
   },
   "orientation": {
     "lock": "Lock Orientation",

@@ -8,7 +8,12 @@
     "about": "紹介",
     "lightMode": "ライトモード",
     "darkMode": "ダークモード",
-    "installApp": "アプリをインストール"
+    "installApp": "アプリをインストール",
+    "installBannerText": "アプリをインストールすると快適にプレイできます",
+    "installBannerDismiss": "閉じる"
+  },
+  "offline": {
+    "message": "オフラインです。一部の機能が制限される場合があります。"
   },
   "orientation": {
     "lock": "画面固定",

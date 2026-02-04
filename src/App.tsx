@@ -9,6 +9,7 @@ import type { GameScreen } from "@/types/ui";
 import { useTheme } from "@/hooks/useTheme";
 import { setupAdObserver, preventAdSenseErrors } from "@/utils/adsense";
 import { registerServiceWorker } from "@/utils/serviceWorker";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 import "@/styles/App.css";
 
 const App: React.FC = () => {
@@ -80,6 +81,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <SEOHead />
+      <OfflineBanner />
       <div className="app-container">
         {!isUIHidden && (
           <Header onNavigate={setCurrentScreen} currentScreen={currentScreen} />

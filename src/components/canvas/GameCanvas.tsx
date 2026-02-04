@@ -278,13 +278,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
+    const baseDpr = window.devicePixelRatio || 1;
+    const dpr = tubes.length > 14 ? Math.min(2, baseDpr) : baseDpr;
     canvas.width = size.w * dpr;
     canvas.height = size.h * dpr;
     canvas.style.width = `${size.w}px`;
     canvas.style.height = `${size.h}px`;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: true,
+      willReadFrequently: false,
+    });
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 

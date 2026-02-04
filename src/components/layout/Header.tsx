@@ -17,12 +17,19 @@ interface HeaderProps {
   currentScreen?: GameScreen;
 }
 
+const INSTALL_BANNER_DISMISSED_KEY = "chipGemSort_installBannerDismissed";
+
 const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [installBannerDismissed, setInstallBannerDismissed] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) === "true"
+      : false
+  );
 
   useEffect(() => {
     setIsStandalone(
@@ -36,6 +43,11 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
+
+  const dismissInstallBanner = () => {
+    setInstallBannerDismissed(true);
+    localStorage.setItem(INSTALL_BANNER_DISMISSED_KEY, "true");
+  };
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -127,6 +139,35 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           ☰
         </button>
       </div>
+
+      {!isStandalone && deferredPrompt && !installBannerDismissed && (
+        <div
+          className="header-install-banner"
+          role="region"
+          aria-label={t("header.installBannerText")}
+        >
+          <span className="header-install-banner-text">
+            {t("header.installBannerText")}
+          </span>
+          <div className="header-install-banner-actions">
+            <button
+              type="button"
+              className="header-install-banner-install"
+              onClick={handleInstall}
+            >
+              {t("header.installApp")}
+            </button>
+            <button
+              type="button"
+              className="header-install-banner-dismiss"
+              onClick={dismissInstallBanner}
+              aria-label={t("header.installBannerDismiss")}
+            >
+              {t("header.installBannerDismiss")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {mobileMenuOpen && (
         <div className="header-mobile-nav">

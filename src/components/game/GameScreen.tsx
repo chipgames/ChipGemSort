@@ -62,6 +62,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       }
       const next = pour(tubes, selectedTubeIndex, index);
       if (next) {
+        playSound("move");
         completedMovesRef.current = moves + 1;
         const movedColor =
           tubes[selectedTubeIndex].gems[
@@ -83,7 +84,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       setSelectedTubeIndex(null);
       setHint(null);
     },
-    [tubes, selectedTubeIndex, completed, stageNumber, animatingMove]
+    [tubes, selectedTubeIndex, completed, stageNumber, animatingMove, playSound]
   );
 
   useEffect(() => {

@@ -8,7 +8,12 @@
     "about": "关于",
     "lightMode": "浅色模式",
     "darkMode": "深色模式",
-    "installApp": "安装应用"
+    "installApp": "安装应用",
+    "installBannerText": "安装应用可获得更流畅的体验",
+    "installBannerDismiss": "关闭"
+  },
+  "offline": {
+    "message": "您处于离线状态，部分功能可能受限。"
   },
   "orientation": {
     "lock": "锁定屏幕",

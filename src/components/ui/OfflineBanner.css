@@ -1,0 +1,26 @@
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--accent-warning, #ffb300);
+  color: #1a1a1a;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.offline-banner-icon {
+  font-size: 1rem;
+}
+
+.offline-banner-text {
+  flex: 1;
+  text-align: center;
+}
