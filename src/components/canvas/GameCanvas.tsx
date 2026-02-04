@@ -875,6 +875,33 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         }}
         style={{ touchAction: "manipulation", pointerEvents: "auto" }}
       />
+      <div
+        className="game-canvas-a11y-actions"
+        role="toolbar"
+        aria-label={stageLabel}
+      >
+        <button type="button" onClick={onBack}>
+          {backLabel}
+        </button>
+        <button type="button" onClick={onRetry}>
+          {retryLabel}
+        </button>
+        {onUndo && (
+          <button
+            type="button"
+            onClick={onUndo}
+            disabled={!canUndo}
+            aria-disabled={!canUndo}
+          >
+            {undoLabel}
+          </button>
+        )}
+        {onHint && (
+          <button type="button" onClick={onHint}>
+            {hintLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 };

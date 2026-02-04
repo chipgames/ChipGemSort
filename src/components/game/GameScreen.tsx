@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useSound } from "@/hooks/useSound";
 import { storageManager } from "@/utils/storage";
 import type { Tube } from "@/types/game";
 import type { GameProgress } from "@/types/storage";
@@ -22,6 +23,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   onNextStage,
 }) => {
   const { t } = useLanguage();
+  const { playSound } = useSound();
   const [tubes, setTubes] = useState<Tube[]>(() => generateStage(stageNumber));
   const [selectedTubeIndex, setSelectedTubeIndex] = useState<number | null>(
     null
@@ -149,6 +151,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
               stars,
               bestMoves: records[stageNumber]?.moves ?? completedMoves,
             });
+            playSound("success");
             setCompleted(true);
           }
         }
@@ -159,7 +162,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     };
     animationFrameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [animatingMove, stageNumber]);
+  }, [animatingMove, stageNumber, playSound]);
 
   const handleRetry = useCallback(() => {
     setTubes(generateStage(stageNumber));

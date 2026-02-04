@@ -21,6 +21,9 @@ const StageSelectScreen: React.FC<StageSelectScreenProps> = ({
   const { t } = useLanguage();
   const [unlockedStages, setUnlockedStages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
+  const [stageRecords, setStageRecords] = useState<
+    Record<number, { stars: number; moves: number }>
+  >({});
 
   const totalStages = GAME_CONFIG.totalStages;
   const stagesPerPage = GAME_CONFIG.stagesPerPage;
@@ -39,6 +42,7 @@ const StageSelectScreen: React.FC<StageSelectScreenProps> = ({
       setUnlockedStages(1);
       setCurrentPage(1);
     }
+    setStageRecords(progress?.stageRecords ?? {});
   }, [currentScreen, stagesPerPage]);
 
   const handlePageChange = (page: number) => {
@@ -54,6 +58,7 @@ const StageSelectScreen: React.FC<StageSelectScreenProps> = ({
         totalPages={totalPages}
         totalStages={totalStages}
         stagesPerPage={stagesPerPage}
+        stageRecords={stageRecords}
         onStartStage={onStartStage}
         onPageChange={handlePageChange}
       />

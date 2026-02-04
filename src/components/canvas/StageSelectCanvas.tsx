@@ -19,6 +19,7 @@ export interface StageSelectCanvasProps {
   totalPages: number;
   totalStages: number;
   stagesPerPage: number;
+  stageRecords?: Record<number, { stars: number; moves: number }>;
   onStartStage: (stageNumber: number) => void;
   onPageChange: (page: number) => void;
 }
@@ -30,6 +31,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
   totalPages,
   totalStages,
   stagesPerPage,
+  stageRecords = {},
   onStartStage,
   onPageChange,
 }) => {
@@ -168,7 +170,10 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     };
 
     const numFont = Math.max(10, Math.min(16, Math.round(cellSize * 0.35)));
-    ctx.font = `600 ${numFont}px ${fontFamily}`;
+    const starColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent-warning")
+        .trim() || "#ffb300";
 
     for (let i = 0; i < cellCount; i++) {
       const row = Math.floor(i / COLS);
@@ -178,6 +183,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
       const num = startStage + i;
       const isUnlocked = num <= unlockedStages;
       const isHover = hoverCell === i && isUnlocked;
+      const record = stageRecords[num];
 
       roundRect(x, y, cellSize, cellSize, Math.min(12, cellSize * 0.2));
       if (isUnlocked) {
@@ -192,10 +198,34 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
       ctx.lineWidth = isHover ? 2.5 : 1.5;
       ctx.stroke();
 
-      ctx.fillStyle = isUnlocked ? textColor : textSecondary;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(num), x + cellSize / 2, y + cellSize / 2);
+      if (record) {
+        const numY = y + cellSize * 0.38;
+        ctx.font = `600 ${numFont}px ${fontFamily}`;
+        ctx.fillStyle = isUnlocked ? textColor : textSecondary;
+        ctx.fillText(String(num), x + cellSize / 2, numY);
+        const starFont = Math.max(8, Math.round(cellSize * 0.2));
+        ctx.font = `${starFont}px ${fontFamily}`;
+        ctx.fillStyle = starColor;
+        ctx.fillText(
+          "★".repeat(record.stars) + "☆".repeat(3 - record.stars),
+          x + cellSize / 2,
+          y + cellSize * 0.62
+        );
+        const moveFont = Math.max(7, Math.round(cellSize * 0.16));
+        ctx.font = `${moveFont}px ${fontFamily}`;
+        ctx.fillStyle = textSecondary;
+        ctx.fillText(
+          String(record.moves),
+          x + cellSize / 2,
+          y + cellSize * 0.82
+        );
+      } else {
+        ctx.font = `600 ${numFont}px ${fontFamily}`;
+        ctx.fillStyle = isUnlocked ? textColor : textSecondary;
+        ctx.fillText(String(num), x + cellSize / 2, y + cellSize / 2);
+      }
       if (!isUnlocked) {
         const lockFont = Math.max(8, Math.round(cellSize * 0.2));
         ctx.font = `${lockFont}px ${fontFamily}`;
@@ -254,6 +284,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     hoverCell,
     hoverBtn,
     stagesPerPage,
+    stageRecords,
   ]);
 
   const getCellIndexFromXY = useCallback(
