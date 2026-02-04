@@ -2,6 +2,7 @@ import type { Tube, GemColor } from "@/types/game";
 import { GEM_COLORS } from "@/constants/gemConfig";
 import { GAME_CONFIG } from "@/constants/gameConfig";
 import { isSolvable } from "./solvabilityCheck";
+import stageSeeds from "@/constants/stageSeeds.json";
 
 /**
  * 구간별 파라미터 (풀 수 있도록 검증됨: numTubes = numColors + numEmptyTubes)
@@ -86,8 +87,8 @@ function ensureMixed(tubes: Tube[]): void {
   t1.gems.push(...from0);
 }
 
-/** 한 시드로 셔플해서 튜브 배치 생성 (내부용) */
-function generateWithSeed(stageNumber: number, seed: number): Tube[] {
+/** 한 시드로 셔플해서 튜브 배치 생성 (미리 계산된 시드용·스크립트용 export) */
+export function generateWithSeed(stageNumber: number, seed: number): Tube[] {
   const { numTubes, numColors, numEmptyTubes, capacity } =
     getStageParams(stageNumber);
   const numFilledTubes = numTubes - numEmptyTubes;
@@ -122,17 +123,21 @@ function generateWithSeed(stageNumber: number, seed: number): Tube[] {
   return tubes;
 }
 
-/** 한 색당 capacity만큼 채우고, 빈 시험관은 getStageParams 기준. 풀 수 있는 배치가 나올 때까지 시드 변경하며 재시도 */
+const seedsMap = stageSeeds as Record<string, number>;
+
+/** 한 색당 capacity만큼 채우고, 빈 시험관은 getStageParams 기준. 미리 계산된 시드가 있으면 즉시 사용(빠름), 없으면 풀 수 있는 시드 탐색 */
 export function generateStage(stageNumber: number): Tube[] {
+  const knownSeed = seedsMap[String(stageNumber)];
+  if (knownSeed !== undefined) {
+    return generateWithSeed(stageNumber, knownSeed);
+  }
+
   const baseSeed = stageNumber * 12345;
   const maxAttempts = 200;
-
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const tubes = generateWithSeed(stageNumber, baseSeed + attempt);
     const { solvable } = isSolvable(tubes);
     if (solvable) return tubes;
   }
-
-  // 200회 시도 후에도 풀 수 있는 배치가 없으면 마지막 시드로 고정 (드문 경우)
   return generateWithSeed(stageNumber, baseSeed + maxAttempts - 1);
 }
