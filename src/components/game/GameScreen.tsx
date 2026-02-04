@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { storageManager } from "@/utils/storage";
 import type { Tube } from "@/types/game";
@@ -30,10 +30,26 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [completed, setCompleted] = useState(false);
   const [history, setHistory] = useState<Tube[][]>([]);
   const [hint, setHint] = useState<{ from: number; to: number } | null>(null);
+  const [animatingMove, setAnimatingMove] = useState<{
+    fromIndex: number;
+    toIndex: number;
+    color: import("@/types/game").GemColor;
+  } | null>(null);
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const nextTubesRef = useRef<Tube[] | null>(null);
+  const previousTubesRef = useRef<Tube[]>([]);
+  const completedMovesRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
+  const animationStartRef = useRef<number>(0);
+  const [completedRecord, setCompletedRecord] = useState<{
+    moves: number;
+    stars: number;
+    bestMoves: number;
+  } | null>(null);
 
   const handleTubeClick = useCallback(
     (index: number) => {
-      if (completed) return;
+      if (completed || animatingMove) return;
       if (selectedTubeIndex === null) {
         if (tubes[index].gems.length > 0) setSelectedTubeIndex(index);
         return;
@@ -44,32 +60,28 @@ const GameScreen: React.FC<GameScreenProps> = ({
       }
       const next = pour(tubes, selectedTubeIndex, index);
       if (next) {
-        // 히스토리에 현재 상태 저장 (깊은 복사)
-        setHistory((h) => [
-          ...h,
-          tubes.map((t) => ({ ...t, gems: [...t.gems] })),
-        ]);
-        setTubes(next);
-        setMoves((m) => m + 1);
-        if (isComplete(next)) {
-          setCompleted(true);
-          const progress = storageManager.get<GameProgress>(PROGRESS_KEY, {
-            fallback: null,
-          });
-          const highest = Math.max(
-            progress?.highestStage ?? 1,
-            stageNumber + 1
-          );
-          storageManager.set(PROGRESS_KEY, {
-            highestStage: highest,
-            unlockedStages: Array.from({ length: highest }, (_, i) => i + 1),
-          });
-        }
+        completedMovesRef.current = moves + 1;
+        const movedColor =
+          tubes[selectedTubeIndex].gems[
+            tubes[selectedTubeIndex].gems.length - 1
+          ];
+        nextTubesRef.current = next;
+        previousTubesRef.current = tubes.map((t) => ({
+          ...t,
+          gems: [...t.gems],
+        }));
+        setAnimatingMove({
+          fromIndex: selectedTubeIndex,
+          toIndex: index,
+          color: movedColor,
+        });
+        setAnimationProgress(0);
+        animationStartRef.current = performance.now();
       }
       setSelectedTubeIndex(null);
-      setHint(null); // 이동 후 힌트 제거
+      setHint(null);
     },
-    [tubes, selectedTubeIndex, completed, stageNumber]
+    [tubes, selectedTubeIndex, completed, stageNumber, animatingMove]
   );
 
   useEffect(() => {
@@ -77,9 +89,77 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setSelectedTubeIndex(null);
     setMoves(0);
     setCompleted(false);
+    setCompletedRecord(null);
     setHistory([]);
     setHint(null);
+    setAnimatingMove(null);
+    setAnimationProgress(0);
   }, [stageNumber]);
+
+  const ANIM_DURATION_MS = 220;
+
+  useEffect(() => {
+    if (!animatingMove) return;
+    const tick = (now: number) => {
+      const elapsed = now - animationStartRef.current;
+      const raw = Math.min(1, elapsed / ANIM_DURATION_MS);
+      const eased = 1 - Math.pow(1 - raw, 1.4);
+      setAnimationProgress(eased);
+      if (eased < 1) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+      } else {
+        const next = nextTubesRef.current;
+        const prev = previousTubesRef.current;
+        if (next && prev.length > 0) {
+          setHistory((h) => [...h, prev]);
+          setTubes(next.map((t) => ({ ...t, gems: [...t.gems] })));
+          setMoves((m) => m + 1);
+          if (isComplete(next)) {
+            const completedMoves = completedMovesRef.current;
+            const totalGems = next.reduce((s, t) => s + t.gems.length, 0);
+            const stars =
+              completedMoves <= totalGems * 0.7
+                ? 3
+                : completedMoves <= totalGems * 1.0
+                ? 2
+                : 1;
+            const progress = storageManager.get<GameProgress>(PROGRESS_KEY, {
+              fallback: null,
+            });
+            const highest = Math.max(
+              progress?.highestStage ?? 1,
+              stageNumber + 1
+            );
+            const records = { ...(progress?.stageRecords ?? {}) };
+            const prevRecord = records[stageNumber];
+            if (
+              !prevRecord ||
+              completedMoves < prevRecord.moves ||
+              (completedMoves === prevRecord.moves && stars > prevRecord.stars)
+            ) {
+              records[stageNumber] = { stars, moves: completedMoves };
+            }
+            storageManager.set(PROGRESS_KEY, {
+              highestStage: highest,
+              unlockedStages: Array.from({ length: highest }, (_, i) => i + 1),
+              stageRecords: records,
+            });
+            setCompletedRecord({
+              moves: completedMoves,
+              stars,
+              bestMoves: records[stageNumber]?.moves ?? completedMoves,
+            });
+            setCompleted(true);
+          }
+        }
+        setAnimatingMove(null);
+        setAnimationProgress(0);
+        nextTubesRef.current = null;
+      }
+    };
+    animationFrameRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameRef.current);
+  }, [animatingMove, stageNumber]);
 
   const handleRetry = useCallback(() => {
     setTubes(generateStage(stageNumber));
@@ -126,6 +206,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
           onHint={handleHint}
           canUndo={history.length > 0 && !completed}
           hint={hint}
+          animatingMove={animatingMove}
+          animationProgress={animationProgress}
           stageLabel={t("game.stage")}
           movesLabel={t("game.moves")}
           backLabel={t("game.back")}
@@ -135,8 +217,25 @@ const GameScreen: React.FC<GameScreenProps> = ({
         />
       </div>
       {completed && (
-        <div className="game-screen-complete">
+        <div
+          className="game-screen-complete"
+          role="status"
+          aria-live="polite"
+          aria-label={t("game.complete")}
+        >
           <p>{t("game.complete")}</p>
+          {completedRecord && (
+            <div className="game-screen-complete-stats">
+              <span className="game-screen-stars" aria-hidden="true">
+                {"★".repeat(completedRecord.stars)}
+                {"☆".repeat(3 - completedRecord.stars)}
+              </span>
+              <span>
+                {t("game.moves")}: {completedRecord.moves}
+                {` · ${t("game.best")}: ${completedRecord.bestMoves}`}
+              </span>
+            </div>
+          )}
           <div className="game-screen-complete-actions">
             <button type="button" onClick={onBack}>
               {t("game.back")}

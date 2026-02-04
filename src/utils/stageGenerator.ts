@@ -65,7 +65,7 @@ function seededRandom(seed: number): () => number {
 }
 
 /** 모든 튜브가 이미 한 색만 있거나 비어 있으면 true */
-function isAlreadySolved(tubes: Tube[]): boolean {
+export function isAlreadySolved(tubes: Tube[]): boolean {
   return tubes.every((t) => {
     if (t.gems.length === 0) return true;
     const first = t.gems[0];
@@ -74,7 +74,7 @@ function isAlreadySolved(tubes: Tube[]): boolean {
 }
 
 /** 이미 정렬된 상태면, 처음 두 채워진 튜브의 위쪽 절반을 서로 바꿔서 섞인 상태로 만듦 */
-function ensureMixed(tubes: Tube[]): void {
+export function ensureMixed(tubes: Tube[]): void {
   const filled = tubes.filter((t) => t.gems.length > 0);
   if (filled.length < 2) return;
   const t0 = filled[0];

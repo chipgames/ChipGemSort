@@ -41,6 +41,7 @@
     "hint": "提示",
     "stage": "关卡",
     "complete": "完成！",
+    "best": "最佳",
     "retry": "重试",
     "nextStage": "下一关",
     "back": "返回"

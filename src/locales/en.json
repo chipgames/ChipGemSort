@@ -41,6 +41,7 @@
     "hint": "Hint",
     "stage": "Stage",
     "complete": "Complete!",
+    "best": "Best",
     "retry": "Retry",
     "nextStage": "Next Stage",
     "back": "Back"

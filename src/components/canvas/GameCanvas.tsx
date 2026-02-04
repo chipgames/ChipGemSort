@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import type { Tube } from "@/types/game";
+import type { Tube, GemColor } from "@/types/game";
 import { drawGem } from "./GemRenderer";
 import "./GameCanvas.css";
 
@@ -197,6 +197,13 @@ interface GameCanvasProps {
   onHint?: () => void;
   canUndo?: boolean;
   hint?: { from: number; to: number } | null;
+  /** 이동 애니메이션 중일 때 (출발·도착 인덱스, 색). progress 0~1 */
+  animatingMove?: {
+    fromIndex: number;
+    toIndex: number;
+    color: GemColor;
+  } | null;
+  animationProgress?: number;
   stageLabel: string;
   movesLabel: string;
   backLabel: string;
@@ -217,6 +224,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   onHint,
   canUndo = false,
   hint = null,
+  animatingMove = null,
+  animationProgress = 0,
   stageLabel,
   movesLabel,
   backLabel,
@@ -449,8 +458,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const buttonCount = (onHint ? 1 : 0) + (onUndo ? 1 : 0) + 2; // 힌트 + 실행취소 + 돌아가기 + 다시하기
     const totalButtonWidth =
       buttonCount * btnWidth + (buttonCount - 1) * btnGap;
+    const btnMargin = isMobile ? size.w * 0.02 : size.w * 0.04; // 데스크톱에서 이동 텍스트가 버튼에 가려지지 않도록 여유 확보
     const maxMovesX =
-      size.w - padH - totalButtonWidth - movesTextWidth - size.w * 0.02; // 버튼과 충분한 간격
+      size.w - padH - totalButtonWidth - movesTextWidth - btnMargin;
     // 데스크톱에서도 버튼 위치를 고려하여 이동 텍스트 위치 조정
     const movesX = isMobile
       ? Math.min(padH + size.w * 0.15, maxMovesX - size.w * 0.01) // 모바일: 더 왼쪽
@@ -618,6 +628,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const baseY = contentBottom - gemSize / 2;
 
       tube.gems.forEach((color, gi) => {
+        // 이동 애니메이션 중인 출발 튜브의 맨 위 젬은 비행 중이므로 생략
+        if (
+          animatingMove &&
+          ti === animatingMove.fromIndex &&
+          gi === tube.gems.length - 1
+        )
+          return;
         const y = baseY - gi * slotHeight;
         drawGem(ctx, color, baseX, y, gemSize, gemSize);
       });
@@ -632,10 +649,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         );
       }
     });
+
+    // 3) 이동 애니메이션: 비행 중인 젬 그리기
+    if (animatingMove && animationProgress >= 0 && animationProgress <= 1) {
+      const fromLeft = tubeLeft(animatingMove.fromIndex);
+      const toLeft = tubeLeft(animatingMove.toIndex);
+      const fromX = fromLeft + (cellSize - gemSize) / 2;
+      const toX = toLeft + (cellSize - gemSize) / 2;
+      const baseY = contentBottom - gemSize / 2;
+      const fromTube = tubes[animatingMove.fromIndex];
+      const toTube = tubes[animatingMove.toIndex];
+      const fromY =
+        baseY - (fromTube ? fromTube.gems.length - 1 : 0) * slotHeight;
+      const toY = baseY - (toTube ? toTube.gems.length : 0) * slotHeight;
+      const x = fromX + (toX - fromX) * animationProgress;
+      const y = fromY + (toY - fromY) * animationProgress;
+      drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
+    }
   }, [
     size,
     tubes,
     selectedTubeIndex,
+    animatingMove,
+    animationProgress,
     stageNumber,
     moves,
     stageLabel,
@@ -816,11 +852,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ]
   );
 
+  const canvasAriaLabel = `${stageLabel} ${stageNumber}, ${movesLabel}: ${moves}`;
+
   return (
     <div ref={containerRef} className="game-canvas-wrapper">
       <canvas
         ref={canvasRef}
         className="game-canvas"
+        role="application"
+        aria-label={canvasAriaLabel}
+        tabIndex={0}
         onClick={(e) => handlePointer(e.clientX, e.clientY)}
         onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
         onPointerUp={(e) => {
@@ -833,7 +874,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (t) handlePointer(t.clientX, t.clientY);
         }}
         style={{ touchAction: "manipulation", pointerEvents: "auto" }}
-        aria-label="Game board"
       />
     </div>
   );

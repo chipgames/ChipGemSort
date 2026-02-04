@@ -34,6 +34,18 @@
   gap: clamp(20px, 4vmin, 28px);
   padding: clamp(20px, 4vmin, 32px);
   backdrop-filter: blur(6px);
+  animation: gameCompleteFadeIn 0.35s ease-out;
+}
+
+@keyframes gameCompleteFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .game-screen-complete p {
@@ -42,6 +54,34 @@
   color: var(--accent-success);
   letter-spacing: 0.02em;
   text-align: center;
+  animation: gameCompletePop 0.4s ease-out 0.1s both;
+}
+
+.game-screen-complete-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(0.9rem, 2.2vmin, 1rem);
+  color: var(--text-secondary);
+  animation: gameCompletePop 0.4s ease-out 0.18s both;
+}
+
+.game-screen-stars {
+  font-size: clamp(1.25rem, 3.5vmin, 1.5rem);
+  letter-spacing: 0.15em;
+  color: var(--accent-warning, #ffb300);
+}
+
+@keyframes gameCompletePop {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .game-screen-complete-actions {
