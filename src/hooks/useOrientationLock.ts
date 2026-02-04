@@ -2,12 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 
 export type OrientationLockType = "portrait" | "landscape" | null;
 
+/** Screen Orientation API lock/unlock (DOM 타입과 호환용) */
+type OrientWithLock = {
+  lock?(orientation: string): Promise<void>;
+  unlock?(): Promise<void>;
+};
+
+const getOrientation = (): OrientWithLock | null =>
+  typeof screen !== "undefined" && "orientation" in screen
+    ? (screen.orientation as unknown as OrientWithLock)
+    : null;
+
 const isSupported = (): boolean => {
   if (typeof window === "undefined") return false;
+  const orient = getOrientation();
   return (
-    "orientation" in screen &&
-    "lock" in screen.orientation &&
-    typeof screen.orientation.lock === "function"
+    orient != null && orient.lock != null && typeof orient.lock === "function"
   );
 };
 
@@ -51,7 +61,8 @@ export const useOrientationLock = () => {
     async (type: "portrait" | "landscape"): Promise<boolean> => {
       if (!supported) return false;
       try {
-        await screen.orientation.lock(type);
+        const orient = getOrientation();
+        if (orient?.lock) await orient.lock(type);
         setIsLocked(true);
         setLockType(type);
         return true;
@@ -66,7 +77,8 @@ export const useOrientationLock = () => {
   const unlock = useCallback(async (): Promise<boolean> => {
     if (!supported) return false;
     try {
-      await screen.orientation.unlock();
+      const orient = getOrientation();
+      if (orient?.unlock) await orient.unlock();
       setIsLocked(false);
       setLockType(getCurrentOrientation());
       return true;
