@@ -61,5 +61,27 @@ export const useLanguage = () => {
     return typeof v === "string" ? v : key;
   };
 
-  return { language, setLanguage, t, isLoading };
+  const tArray = (key: string): string[] => {
+    if (isLoading || !translations) return [];
+    const keys = key.split(".");
+    let v: unknown = translations;
+    for (const k of keys) {
+      v = (v as Record<string, unknown>)?.[k];
+      if (v === undefined) return [];
+    }
+    return Array.isArray(v) ? (v as string[]) : [];
+  };
+
+  const tObject = <T = unknown>(key: string): T | null => {
+    if (isLoading || !translations) return null;
+    const keys = key.split(".");
+    let v: unknown = translations;
+    for (const k of keys) {
+      v = (v as Record<string, unknown>)?.[k];
+      if (v === undefined) return null;
+    }
+    return v as T;
+  };
+
+  return { language, setLanguage, t, tArray, tObject, isLoading, translations };
 };

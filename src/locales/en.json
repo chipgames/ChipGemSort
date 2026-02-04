@@ -47,16 +47,79 @@
   "guide": {
     "title": "Guide",
     "description": "Move gems from tube to tube until each tube has only one color.",
-    "step1": "Tap a tube to select it, then tap the destination tube.",
-    "step2": "Only the top gem can be moved, and only to an empty tube or on top of the same color.",
-    "step3": "Clear when every tube is filled with a single color."
+    "objective": "Objective",
+    "objectiveText": "Group all gems of the same color together so each tube contains only one color. Clear when every tube is filled with a single color.",
+    "rules": "Game Rules",
+    "rulesList": [
+      "Only the top gem can be moved.",
+      "Gems can only be moved to an empty tube or on top of the same color.",
+      "You cannot place a gem on top of a different color.",
+      "Tubes have a limited capacity (usually 4)."
+    ],
+    "steps": "How to Play",
+    "step1": "1. Select Tube: Tap a tube with gems to select it.",
+    "step2": "2. Move: Tap another tube with the same color or an empty tube to move the gem.",
+    "step3": "3. Strategy: Plan your moves ahead and use empty tubes strategically to organize gems.",
+    "step4": "4. Clear: Complete when every tube is filled with a single color!",
+    "tips": "Tips",
+    "tipsList": [
+      "Use the 'Undo' button if you make a mistake.",
+      "Difficult stages can be restarted with the 'Retry' button.",
+      "Using empty tubes strategically makes organization easier.",
+      "Moving multiple gems of the same color at once is efficient."
+    ]
   },
   "help": {
     "title": "Help",
-    "description": "Check FAQ and troubleshooting."
+    "description": "Check FAQ and troubleshooting.",
+    "faq": [
+      {
+        "question": "The game is too difficult",
+        "answer": "Start with lower stages and work your way up. Each stage is designed to be solvable. If you make a mistake, use the 'Undo' button or 'Retry' to start over."
+      },
+      {
+        "question": "Can I skip stages?",
+        "answer": "Stages must be completed in order. When you clear a stage, the next one is automatically unlocked. Your progress is saved automatically."
+      },
+      {
+        "question": "Is my progress saved?",
+        "answer": "Yes, your progress is saved automatically. Even if you close the browser, stages up to your last cleared stage remain unlocked."
+      },
+      {
+        "question": "How do I use the Undo feature?",
+        "answer": "Click the 'Undo' button at the top of the game screen to cancel your last move. Undo is not available after completing a stage."
+      },
+      {
+        "question": "The screen rotates on mobile",
+        "answer": "Use the orientation lock button in the header to lock the screen in portrait or landscape mode. Choose the orientation that works best for you."
+      },
+      {
+        "question": "The game runs slowly",
+        "answer": "Update your browser to the latest version and close other tabs or apps to free up memory. You can also try clearing your cache and reloading."
+      }
+    ]
   },
   "about": {
     "title": "About",
-    "description": "ChipGemSort is a color sort puzzle. Sort gems into tubes so each tube has one color only."
+    "description": "ChipGemSort is a color sort puzzle. Sort gems into tubes so each tube has one color only.",
+    "features": "Game Features",
+    "featuresList": [
+      "200 diverse stages",
+      "Progressively increasing difficulty",
+      "Undo functionality",
+      "Automatic progress saving",
+      "Dark/Light mode support",
+      "Mobile optimized",
+      "Free to play"
+    ],
+    "howToPlay": "How to Play",
+    "howToPlayText": "Move gems from tube to tube to group them by color. Only the top gem can be moved, and only to an empty tube or on top of the same color.",
+    "developer": "Developer",
+    "developerText": "ChipGemSort is a free online puzzle game created by CHIP GAMES.",
+    "version": "Version",
+    "credits": "Credits",
+    "creditsText": "This game is inspired by the Water Sort puzzle game genre.",
+    "contact": "Contact",
+    "contactText": "Feel free to contact us with any questions or feedback."
   }
 }
