@@ -11,19 +11,19 @@ export function drawGem(
   height: number
 ): void {
   const colors = GEM_COLOR_HEX[color];
-  const pad = Math.min(width, height) * 0.05;
-  const w = width - pad * 2;
-  const h = height - pad * 2;
-  const size = Math.min(w, h);
+  // 보석은 항상 정사각형으로 강제 (모바일에서 비율 깨짐 방지)
+  const baseSize = Math.min(width, height);
+  const pad = baseSize * 0.05;
+  const size = baseSize - pad * 2;
   const rx = size * 0.2;
-  const centerX = x + pad + w / 2;
-  const centerY = y + pad + h / 2;
+  const centerX = x + pad + size / 2;
+  const centerY = y + pad + size / 2;
 
   ctx.save();
 
   // 그림자
   ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-  roundRect(ctx, x + pad + 2, y + pad + 2, w, h, rx, rx);
+  roundRect(ctx, x + pad + 2, y + pad + 2, size, size, rx, rx);
   ctx.fill();
 
   // 메인 젬 그라데이션
@@ -33,13 +33,13 @@ export function drawGem(
   const grad = ctx.createLinearGradient(
     x + pad,
     y + pad,
-    x + pad + w,
-    y + pad + h
+    x + pad + size,
+    y + pad + size
   );
   grad.addColorStop(0, colors.light);
   grad.addColorStop(1, colors.dark);
   ctx.fillStyle = grad;
-  roundRect(ctx, x + pad, y + pad, w, h, rx, rx);
+  roundRect(ctx, x + pad, y + pad, size, size, rx, rx);
   ctx.fill();
   ctx.shadowColor = "transparent";
   ctx.shadowOffsetY = 0;
@@ -54,13 +54,13 @@ export function drawGem(
 
   // 상단 하이라이트
   ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
-  roundRect(ctx, x + pad, y + pad, w, h * 0.4, rx, rx);
+  roundRect(ctx, x + pad, y + pad, size, size * 0.4, rx, rx);
   ctx.fill();
 
   // 테두리
   ctx.strokeStyle = getBorderColor(color);
   ctx.lineWidth = Math.max(1, size * 0.06);
-  roundRect(ctx, x + pad, y + pad, w, h, rx, rx);
+  roundRect(ctx, x + pad, y + pad, size, size, rx, rx);
   ctx.stroke();
 
   ctx.restore();

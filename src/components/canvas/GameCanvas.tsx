@@ -222,16 +222,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!canvas || !container) return;
 
     const updateSize = () => {
+      // CSS aspect-ratio가 적용된 컨테이너의 실제 크기 사용 (16:9 비율 유지)
       const cw = Math.max(container.clientWidth || 0, MIN_WIDTH);
       const ch = Math.max(container.clientHeight || 0, MIN_HEIGHT);
+
+      // 16:9 비율 강제 유지 (모바일에서도 일관된 비율)
       const maxW = Math.min(cw, MAX_WIDTH);
-      const maxH = maxW / ASPECT_RATIO;
+      const idealH = maxW / ASPECT_RATIO;
       let w = maxW;
-      let h = maxH;
-      if (ch < h) {
+      let h = idealH;
+
+      // 높이가 제한되면 너비를 비율에 맞춤
+      if (ch < idealH) {
         h = ch;
         w = h * ASPECT_RATIO;
+        // 너비가 컨테이너를 넘지 않도록
+        if (w > cw) {
+          w = cw;
+          h = w / ASPECT_RATIO;
+        }
       }
+
       w = Math.max(MIN_WIDTH, Math.floor(w));
       h = Math.max(MIN_HEIGHT, Math.floor(h));
       setSize({ w, h });
@@ -264,9 +275,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const availableH = gameAreaH * 0.8;
     const gapRatio = 0.28;
     const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
-    const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
+    // 가로/세로 제약 모두 고려하여 cellSize 결정 (보석과 시험관 비율 유지)
+    const cellSizeByWidth = availableW / tubeCellW;
+    const cellSizeByHeight = availableH / capacity;
+    const cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
     const gap = cellSize * gapRatio;
-    const gemSize = cellSize * 0.78;
+    // 보석은 정사각형으로 유지 (시험관 내부 너비 고려: 패딩 3px*2 + 테두리 약 4px = 약 10px 감소)
+    // 시험관 내부 너비 ≈ cellSize - 10, 보석은 그보다 작게 (약 70%로 조정)
+    const gemSize = cellSize * 0.6;
     const totalW = numTubes * cellSize + (numTubes - 1) * gap;
     const totalH = cellSize * capacity;
     const marginX = (size.w - totalW) / 2;
@@ -442,12 +458,20 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
 
     // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
+    // 패딩을 줄여서 모바일에서도 보석이 시험관 안에 잘 맞도록
+    const tubePadding = Math.max(2, Math.min(3, cellSize * 0.05));
     tubes.forEach((_, ti) => {
       const left = tubeLeft(ti);
       const tubeTop = marginY;
       const tubeW = cellSize;
       const tubeH = cellSize * capacity;
-      drawTube(ctx, left + 3, tubeTop + 3, tubeW - 6, tubeH - 6);
+      drawTube(
+        ctx,
+        left + tubePadding,
+        tubeTop + tubePadding,
+        tubeW - tubePadding * 2,
+        tubeH - tubePadding * 2
+      );
     });
 
     // 2) 젬 그리기 (contentTop~contentBottom 안에 넣어 시험관 밖으로 안 나가게)
@@ -466,10 +490,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       if (selectedTubeIndex === ti) {
         drawTubeSelectionGlow(
           ctx,
-          left + 3,
-          marginY + 3,
-          cellSize - 6,
-          cellSize * capacity - 6
+          left + tubePadding,
+          marginY + tubePadding,
+          cellSize - tubePadding * 2,
+          cellSize * capacity - tubePadding * 2
         );
       }
     });
