@@ -38,6 +38,7 @@
   "game": {
     "moves": "이동",
     "undo": "실행 취소",
+    "hint": "힌트",
     "stage": "스테이지",
     "complete": "클리어!",
     "retry": "다시 하기",

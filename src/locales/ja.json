@@ -38,6 +38,7 @@
   "game": {
     "moves": "手数",
     "undo": "元に戻す",
+    "hint": "ヒント",
     "stage": "ステージ",
     "complete": "クリア！",
     "retry": "リトライ",

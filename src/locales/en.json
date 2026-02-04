@@ -38,6 +38,7 @@
   "game": {
     "moves": "Moves",
     "undo": "Undo",
+    "hint": "Hint",
     "stage": "Stage",
     "complete": "Complete!",
     "retry": "Retry",

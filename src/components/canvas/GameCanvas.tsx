@@ -194,12 +194,15 @@ interface GameCanvasProps {
   onBack: () => void;
   onRetry: () => void;
   onUndo?: () => void;
+  onHint?: () => void;
   canUndo?: boolean;
+  hint?: { from: number; to: number } | null;
   stageLabel: string;
   movesLabel: string;
   backLabel: string;
   retryLabel: string;
   undoLabel: string;
+  hintLabel: string;
 }
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -211,12 +214,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   onBack,
   onRetry,
   onUndo,
+  onHint,
   canUndo = false,
+  hint = null,
   stageLabel,
   movesLabel,
   backLabel,
   retryLabel,
   undoLabel,
+  hintLabel,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -344,28 +350,40 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const base = Math.min(size.w, size.h);
     const isMobile = size.w <= 600;
     const titleFont = Math.max(11, Math.min(16, Math.round(base * 0.042)));
-    const btnFont = Math.max(10, Math.min(14, Math.round(base * 0.036)));
+    // 모바일에서는 버튼 폰트를 더 작게
+    const btnFont = isMobile
+      ? Math.max(9, Math.min(12, Math.round(base * 0.032)))
+      : Math.max(10, Math.min(14, Math.round(base * 0.036)));
     const padH = size.w * 0.032;
     const fontFamily =
       "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
     ctx.font = `600 ${btnFont}px ${fontFamily}`;
-    const minWRetry = ctx.measureText(retryLabel).width + (isMobile ? 24 : 44);
+    // 모바일에서는 패딩을 더 줄임 (24 -> 16), 데스크톱도 줄임 (44 -> 32)
+    const minWRetry = ctx.measureText(retryLabel).width + (isMobile ? 16 : 32);
     ctx.font = `500 ${btnFont}px ${fontFamily}`;
-    const minWBack = ctx.measureText(backLabel).width + (isMobile ? 24 : 44);
+    const minWBack = ctx.measureText(backLabel).width + (isMobile ? 16 : 32);
     const minWUndo = onUndo
-      ? ctx.measureText(undoLabel).width + (isMobile ? 24 : 44)
+      ? ctx.measureText(undoLabel).width + (isMobile ? 16 : 32)
       : 0;
-    // 모바일에서는 버튼 너비를 줄임
+    const minWHint = onHint
+      ? ctx.measureText(hintLabel).width + (isMobile ? 16 : 32)
+      : 0;
+    // 모바일에서는 버튼 너비를 더 줄임 (60 -> 50), 데스크톱도 줄임 (88 -> 75)
     const btnWidth = isMobile
-      ? Math.max(60, Math.ceil(Math.max(minWRetry, minWBack, minWUndo)))
+      ? Math.max(
+          50,
+          Math.ceil(Math.max(minWRetry, minWBack, minWUndo, minWHint))
+        )
       : Math.max(
-          88,
-          Math.round(size.w * 0.2),
+          75,
+          Math.round(size.w * 0.16), // 화면 너비의 20% -> 16%로 감소
           Math.ceil(minWRetry),
           Math.ceil(minWBack),
-          Math.ceil(minWUndo)
+          Math.ceil(minWUndo),
+          Math.ceil(minWHint)
         );
-    const btnGap = isMobile ? size.w * 0.01 : size.w * 0.02;
+    // 모바일에서는 버튼 간격을 더 줄임 (0.01 -> 0.008), 데스크톱도 줄임 (0.02 -> 0.015)
+    const btnGap = isMobile ? size.w * 0.008 : size.w * 0.015;
     const btnTop = headerHeight * 0.1;
     const btnH = headerHeight * 0.8;
     const btnRadius = Math.min(10, btnH * 0.4);
@@ -399,21 +417,50 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.shadowColor = "rgba(0,0,0,0.08)";
     ctx.shadowBlur = textShadowBlur;
     ctx.shadowOffsetY = textShadowY;
-    ctx.font = `600 ${titleFont}px ${fontFamily}`;
-    ctx.fillStyle = textColor;
-    ctx.fillText(`${stageLabel} ${stageNumber}`, padH, headerHeight / 2);
-    ctx.font = `500 ${titleFont}px ${fontFamily}`;
-    ctx.fillStyle = textSecondary;
-    // 모바일에서는 이동 텍스트 위치를 조정하여 버튼과 겹치지 않도록
-    const movesX = isMobile ? padH + size.w * 0.18 : padH + size.w * 0.24;
-    ctx.fillText(`${movesLabel}: ${moves}`, movesX, headerHeight / 2);
-    ctx.restore();
-
+    // 버튼 위치 먼저 계산 (이동 텍스트 위치 결정에 필요)
     const retryLeft = size.w - padH - btnWidth;
     const backLeft = size.w - padH - btnWidth - btnGap - btnWidth;
     const undoLeft = onUndo
       ? size.w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
       : backLeft;
+    const hintLeft = onHint
+      ? size.w -
+        padH -
+        btnWidth -
+        btnGap -
+        btnWidth -
+        btnGap -
+        btnWidth -
+        (onUndo ? btnGap + btnWidth : 0)
+      : undoLeft;
+
+    ctx.font = `600 ${titleFont}px ${fontFamily}`;
+    ctx.fillStyle = textColor;
+    ctx.fillText(`${stageLabel} ${stageNumber}`, padH, headerHeight / 2);
+    ctx.font = `500 ${titleFont}px ${fontFamily}`;
+    ctx.fillStyle = textSecondary;
+    // 이동 텍스트 위치: 가장 왼쪽 버튼과 겹치지 않도록 조정
+    const stageTextWidth = ctx.measureText(
+      `${stageLabel} ${stageNumber}`
+    ).width;
+    const movesTextWidth = ctx.measureText(`${movesLabel}: ${moves}`).width;
+    const minMovesX = padH + stageTextWidth + size.w * 0.02; // 스테이지 텍스트와 간격
+    // 버튼 개수에 따라 최대 위치 조정
+    const buttonCount = (onHint ? 1 : 0) + (onUndo ? 1 : 0) + 2; // 힌트 + 실행취소 + 돌아가기 + 다시하기
+    const totalButtonWidth =
+      buttonCount * btnWidth + (buttonCount - 1) * btnGap;
+    const maxMovesX =
+      size.w - padH - totalButtonWidth - movesTextWidth - size.w * 0.02; // 버튼과 충분한 간격
+    // 데스크톱에서도 버튼 위치를 고려하여 이동 텍스트 위치 조정
+    const movesX = isMobile
+      ? Math.min(padH + size.w * 0.15, maxMovesX - size.w * 0.01) // 모바일: 더 왼쪽
+      : Math.min(padH + size.w * 0.24, maxMovesX); // 데스크톱: 버튼과 충분한 간격
+    ctx.fillText(
+      `${movesLabel}: ${moves}`,
+      Math.max(minMovesX, movesX),
+      headerHeight / 2
+    );
+    ctx.restore();
 
     const shadowBlur = Math.max(4, size.w / 120);
     const shadowY = Math.max(2, size.w / 400);
@@ -464,6 +511,38 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.restore();
     }
 
+    if (onHint) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.12)";
+      ctx.shadowBlur = shadowBlur;
+      ctx.shadowOffsetY = shadowY;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = Math.max(1, size.w / 450);
+      const hintGrad = ctx.createLinearGradient(
+        hintLeft,
+        btnTop,
+        hintLeft + btnWidth,
+        btnTop + btnH
+      );
+      hintGrad.addColorStop(0, "#ffd700");
+      hintGrad.addColorStop(1, "#ffb300");
+      ctx.fillStyle = hintGrad;
+      drawRoundRect(hintLeft, btnTop, btnWidth, btnH, btnRadius);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.2)";
+      ctx.shadowBlur = textShadowBlur;
+      ctx.shadowOffsetY = textShadowY;
+      ctx.font = `600 ${btnFont}px ${fontFamily}`;
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.fillText(hintLabel, hintLeft + btnWidth / 2, headerHeight / 2);
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.18)";
     ctx.shadowBlur = shadowBlur;
@@ -507,6 +586,20 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const tubeTop = marginY;
       const tubeW = cellSize;
       const tubeH = cellSize * capacity;
+
+      // 힌트 하이라이트
+      if (hint && (hint.from === ti || hint.to === ti)) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(left - 4, tubeTop - 4, tubeW + 8, tubeH + 8);
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 4;
+        ctx.shadowColor = "#ffd700";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      }
+
       drawTube(
         ctx,
         left + tubePadding,
@@ -550,8 +643,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     backLabel,
     retryLabel,
     undoLabel,
+    hintLabel,
     onUndo,
+    onHint,
     canUndo,
+    hint,
   ]);
 
   const getTubeIndexFromClientXY = useCallback(
@@ -589,7 +685,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   );
 
   const getHeaderHit = useCallback(
-    (clientX: number, clientY: number): "back" | "retry" | "undo" | null => {
+    (
+      clientX: number,
+      clientY: number
+    ): "back" | "retry" | "undo" | "hint" | null => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
@@ -603,22 +702,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const padH = w * 0.032;
       // 모바일에서는 버튼 크기를 줄임 (렌더링 로직과 동일하게)
       const base = Math.min(w, h);
-      const btnFont = Math.max(10, Math.min(14, Math.round(base * 0.036)));
+      const btnFont = isMobile
+        ? Math.max(9, Math.min(12, Math.round(base * 0.032)))
+        : Math.max(10, Math.min(14, Math.round(base * 0.036)));
       const fontFamily =
         "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
       const ctx = canvas.getContext("2d");
       if (!ctx) return null;
       ctx.font = `500 ${btnFont}px ${fontFamily}`;
-      const minWBack = ctx.measureText(backLabel).width + (isMobile ? 24 : 44);
+      const minWBack = ctx.measureText(backLabel).width + (isMobile ? 16 : 32);
       const minWRetry =
-        ctx.measureText(retryLabel).width + (isMobile ? 24 : 44);
+        ctx.measureText(retryLabel).width + (isMobile ? 16 : 32);
       const minWUndo = onUndo
-        ? ctx.measureText(undoLabel).width + (isMobile ? 24 : 44)
+        ? ctx.measureText(undoLabel).width + (isMobile ? 16 : 32)
+        : 0;
+      const minWHint = onHint
+        ? ctx.measureText(hintLabel).width + (isMobile ? 16 : 32)
         : 0;
       const btnWidth = isMobile
-        ? Math.max(60, Math.ceil(Math.max(minWRetry, minWBack, minWUndo)))
-        : Math.max(96, Math.round(w * 0.2));
-      const btnGap = isMobile ? w * 0.01 : w * 0.02;
+        ? Math.max(
+            50,
+            Math.ceil(Math.max(minWRetry, minWBack, minWUndo, minWHint))
+          )
+        : Math.max(75, Math.round(w * 0.16));
+      const btnGap = isMobile ? w * 0.008 : w * 0.015;
       const btnTop = headerHeight * 0.1;
       const btnH = headerHeight * 0.8;
       const retryLeft = w - padH - btnWidth;
@@ -626,6 +733,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const undoLeft = onUndo
         ? w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
         : backLeft;
+      const hintLeft = onHint
+        ? w -
+          padH -
+          btnWidth -
+          btnGap -
+          btnWidth -
+          btnGap -
+          btnWidth -
+          (onUndo ? btnGap + btnWidth : 0)
+        : undoLeft;
       if (
         x >= backLeft &&
         x < backLeft + btnWidth &&
@@ -649,9 +766,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         y < btnTop + btnH
       )
         return "undo";
+      if (
+        onHint &&
+        x >= hintLeft &&
+        x < hintLeft + btnWidth &&
+        y >= btnTop &&
+        y < btnTop + btnH
+      )
+        return "hint";
       return null;
     },
-    [onUndo, canUndo, backLabel, retryLabel, undoLabel]
+    [onUndo, onHint, canUndo, backLabel, retryLabel, undoLabel, hintLabel]
   );
 
   const lastHandledRef = useRef(0);
@@ -673,6 +798,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         onUndo();
         return;
       }
+      if (headerHit === "hint" && onHint) {
+        onHint();
+        return;
+      }
       const ti = getTubeIndexFromClientXY(clientX, clientY);
       if (ti !== null) onTubeClick(ti);
     },
@@ -683,6 +812,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       onBack,
       onRetry,
       onUndo,
+      onHint,
     ]
   );
 

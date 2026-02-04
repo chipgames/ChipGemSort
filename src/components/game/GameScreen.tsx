@@ -5,6 +5,7 @@ import type { Tube } from "@/types/game";
 import type { GameProgress } from "@/types/storage";
 import { generateStage } from "@/utils/stageGenerator";
 import { pour, isComplete } from "@/utils/gameLogic";
+import { findHint } from "@/utils/hintFinder";
 import GameCanvas from "@/components/canvas/GameCanvas";
 import { PROGRESS_KEY } from "@/components/game/gameBoardStorage";
 import "./GameScreen.css";
@@ -28,6 +29,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [moves, setMoves] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [history, setHistory] = useState<Tube[][]>([]);
+  const [hint, setHint] = useState<{ from: number; to: number } | null>(null);
 
   const handleTubeClick = useCallback(
     (index: number) => {
@@ -65,6 +67,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         }
       }
       setSelectedTubeIndex(null);
+      setHint(null); // 이동 후 힌트 제거
     },
     [tubes, selectedTubeIndex, completed, stageNumber]
   );
@@ -75,6 +78,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setMoves(0);
     setCompleted(false);
     setHistory([]);
+    setHint(null);
   }, [stageNumber]);
 
   const handleRetry = useCallback(() => {
@@ -92,7 +96,20 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setHistory((h) => h.slice(0, -1));
     setMoves((m) => Math.max(0, m - 1));
     setSelectedTubeIndex(null);
+    setHint(null); // Undo 후 힌트 제거
   }, [history, completed]);
+
+  const handleHint = useCallback(() => {
+    if (completed) return;
+    const hintMove = findHint(tubes);
+    if (hintMove) {
+      setHint(hintMove);
+      // 3초 후 힌트 자동 제거
+      setTimeout(() => {
+        setHint((current) => (current === hintMove ? null : current));
+      }, 3000);
+    }
+  }, [tubes, completed]);
 
   return (
     <div className="game-screen">
@@ -106,12 +123,15 @@ const GameScreen: React.FC<GameScreenProps> = ({
           onBack={onBack}
           onRetry={handleRetry}
           onUndo={handleUndo}
+          onHint={handleHint}
           canUndo={history.length > 0 && !completed}
+          hint={hint}
           stageLabel={t("game.stage")}
           movesLabel={t("game.moves")}
           backLabel={t("game.back")}
           retryLabel={t("game.retry")}
           undoLabel={t("game.undo")}
+          hintLabel={t("game.hint")}
         />
       </div>
       {completed && (
