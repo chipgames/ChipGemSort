@@ -11,6 +11,7 @@ import { setupAdObserver, preventAdSenseErrors } from "@/utils/adsense";
 import { registerServiceWorker } from "@/utils/serviceWorker";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import OrientationLock from "@/components/ui/OrientationLock";
+import ScreenOrientationLock from "@/components/ui/ScreenOrientationLock";
 import "@/styles/App.css";
 
 const App: React.FC = () => {
@@ -113,6 +114,7 @@ const App: React.FC = () => {
             >
               {isUIHidden ? "👁️" : "🙈"}
             </button>
+            <ScreenOrientationLock className="screen-orientation-lock-fixed" />
             <OrientationLock className="orientation-lock-fixed" />
           </>
         )}

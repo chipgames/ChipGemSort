@@ -3,6 +3,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import LanguageSelector from "@/components/ui/LanguageSelector";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import OrientationLock from "@/components/ui/OrientationLock";
+import ScreenOrientationLock from "@/components/ui/ScreenOrientationLock";
 import SoundToggle from "@/components/ui/SoundToggle";
 import type { GameScreen } from "@/types/ui";
 import "./Header.css";
@@ -189,6 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             </button>
           )}
           <div className="header-mobile-nav-actions">
+            <ScreenOrientationLock />
             <OrientationLock />
             <SoundToggle />
             <ThemeToggle />
