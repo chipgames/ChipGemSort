@@ -109,8 +109,32 @@ const ScreenOrientationLock: React.FC<ScreenOrientationLockProps> = ({
 
   if (!supported || !isMobile) return null;
 
-  const handleClick = () => {
-    setIsAutoLockEnabled((prev) => !prev);
+  const handleClick = async () => {
+    const newValue = !isAutoLockEnabled;
+    setIsAutoLockEnabled(newValue);
+    
+    // 즉시 lock/unlock 실행 (useEffect와 별도로)
+    if (supported && isMobile) {
+      if (newValue) {
+        // 고정 활성화: 현재 방향으로 고정
+        const currentOrientation =
+          Math.abs(window.orientation ?? screen.orientation?.angle ?? 0) === 90
+            ? "landscape"
+            : "portrait";
+        try {
+          await lock(currentOrientation);
+        } catch (err) {
+          console.warn("Failed to lock orientation:", err);
+        }
+      } else {
+        // 고정 해제
+        try {
+          await unlock();
+        } catch (err) {
+          console.warn("Failed to unlock orientation:", err);
+        }
+      }
+    }
   };
 
   const getIcon = () => {

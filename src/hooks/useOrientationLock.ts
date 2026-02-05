@@ -63,15 +63,32 @@ export const useOrientationLock = () => {
       try {
         const orient = getOrientation();
         if (orient?.lock) {
-          // "any"도 시도해보기 (일부 브라우저에서 더 잘 작동)
+          // 전체 화면 모드 진입 시도 (일부 브라우저에서는 전체 화면에서만 작동)
           try {
-            await orient.lock(type);
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+              await document.documentElement.requestFullscreen();
+            }
+          } catch (fsErr) {
+            // 전체 화면 실패해도 계속 진행
+            console.warn("Fullscreen request failed, continuing:", fsErr);
+          }
+
+          // lock 타입: "-primary" 접미사 사용
+          const lockType = type === "landscape" ? "landscape-primary" : "portrait-primary";
+          
+          try {
+            await orient.lock(lockType);
           } catch (err) {
-            // 특정 방향 실패 시 "any" 시도
+            // "-primary" 실패 시 기본 타입 시도
             try {
-              await orient.lock("any");
+              await orient.lock(type);
             } catch (err2) {
-              throw err; // 원래 에러 throw
+              // 기본 타입도 실패 시 "any" 시도
+              try {
+                await orient.lock("any");
+              } catch (err3) {
+                throw err; // 원래 에러 throw
+              }
             }
           }
         }
@@ -91,7 +108,17 @@ export const useOrientationLock = () => {
     if (!supported) return false;
     try {
       const orient = getOrientation();
-      if (orient?.unlock) await orient.unlock();
+      if (orient?.unlock) {
+        await orient.unlock();
+      }
+      // 전체 화면 모드 해제
+      if (document.fullscreenElement && document.exitFullscreen) {
+        try {
+          await document.exitFullscreen();
+        } catch (fsErr) {
+          // 전체 화면 해제 실패는 무시
+        }
+      }
       setIsLocked(false);
       setLockType(getCurrentOrientation());
       return true;
