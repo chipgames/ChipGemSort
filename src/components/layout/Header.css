@@ -110,7 +110,7 @@
   background: var(--bg-tertiary);
   border-top: 1px solid var(--border-color);
 }
-.header-mobile-nav button {
+.header-mobile-nav > button {
   padding: 12px;
   text-align: left;
   background: none;
@@ -119,8 +119,20 @@
   cursor: pointer;
   border-radius: 8px;
 }
-.header-mobile-nav button:hover {
+.header-mobile-nav > button:hover {
   background: var(--bg-glass);
+}
+.header-mobile-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.header-mobile-nav-actions > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .header-install-banner {

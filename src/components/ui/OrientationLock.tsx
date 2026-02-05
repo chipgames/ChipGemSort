@@ -1,6 +1,5 @@
 import React from "react";
-import { useOrientationLock } from "@/hooks/useOrientationLock";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useCanvasOrientation } from "@/contexts/CanvasOrientationContext";
 import "./OrientationLock.css";
 
 interface OrientationLockProps {
@@ -8,29 +7,48 @@ interface OrientationLockProps {
 }
 
 const OrientationLock: React.FC<OrientationLockProps> = ({ className }) => {
-  const { supported, isLocked, lockType, toggle } = useOrientationLock();
-  const { t } = useLanguage();
+  const { orientation, toggleOrientation } = useCanvasOrientation();
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth <= 768 ||
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0
+    );
+  });
 
-  if (!supported) return null;
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(
+        window.innerWidth <= 768 ||
+          "ontouchstart" in window ||
+          navigator.maxTouchPoints > 0
+      );
+    };
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, []);
 
-  const handleClick = async () => {
-    await toggle();
-  };
+  if (!isMobile) return null;
 
   const getIcon = () => {
-    if (isLocked) {
-      return lockType === "portrait" ? "🔒📱" : "🔒🖥️";
-    }
-    return "📱";
+    return orientation === "landscape" ? "🖥️" : "📱";
   };
 
   const getLabel = () => {
-    if (isLocked) {
-      return lockType === "portrait"
-        ? t("orientation.unlock")
-        : t("orientation.unlock");
-    }
-    return t("orientation.lock");
+    return orientation === "landscape" ? "가로" : "세로";
+  };
+
+  const handleClick = () => {
+    toggleOrientation();
+    // Canvas 리사이즈를 위해 약간의 지연 후 resize 이벤트 트리거
+    setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
   };
 
   return (
@@ -38,8 +56,8 @@ const OrientationLock: React.FC<OrientationLockProps> = ({ className }) => {
       type="button"
       className={`orientation-lock-button ${className ?? ""}`}
       onClick={handleClick}
-      aria-label={getLabel()}
-      title={getLabel()}
+      aria-label={`Canvas ${getLabel()} 모드`}
+      title={`Canvas ${getLabel()} 모드`}
     >
       <span className="orientation-lock-icon">{getIcon()}</span>
       <span className="orientation-lock-label">{getLabel()}</span>

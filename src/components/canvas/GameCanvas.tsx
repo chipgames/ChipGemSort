@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import type { Tube, GemColor } from "@/types/game";
 import { drawGem } from "./GemRenderer";
+import { useCanvasOrientation } from "@/contexts/CanvasOrientationContext";
 import "./GameCanvas.css";
 
-const ASPECT_RATIO = 16 / 9;
+const ASPECT_RATIO_LANDSCAPE = 16 / 9;
+const ASPECT_RATIO_PORTRAIT = 9 / 16;
 
 /** 시험관 경로 생성 (공통) */
 function tubePath(
@@ -178,7 +180,8 @@ function drawTubeSelectionGlow(
 
 const MAX_WIDTH = 1200;
 const MIN_WIDTH = 280;
-const MIN_HEIGHT = Math.floor(MIN_WIDTH / ASPECT_RATIO);
+const MIN_HEIGHT_LANDSCAPE = Math.floor(MIN_WIDTH / ASPECT_RATIO_LANDSCAPE);
+const MIN_HEIGHT_PORTRAIT = Math.floor(MIN_WIDTH / ASPECT_RATIO_PORTRAIT);
 
 /** 헤더 높이: 게임 영역이 주인공이 되도록 얇게 (데스크/모바일 균형) */
 function getHeaderHeight(canvasHeight: number): number {
@@ -233,9 +236,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   undoLabel,
   hintLabel,
 }) => {
+  const { orientation } = useCanvasOrientation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: MIN_WIDTH, h: MIN_HEIGHT });
+  const aspectRatio =
+    orientation === "landscape"
+      ? ASPECT_RATIO_LANDSCAPE
+      : ASPECT_RATIO_PORTRAIT;
+  const minHeight =
+    orientation === "landscape"
+      ? MIN_HEIGHT_LANDSCAPE
+      : MIN_HEIGHT_PORTRAIT;
+  const [size, setSize] = useState({ w: MIN_WIDTH, h: minHeight });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -243,29 +255,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!canvas || !container) return;
 
     const updateSize = () => {
-      // CSS aspect-ratio가 적용된 컨테이너의 실제 크기 사용 (16:9 비율 유지)
+      // CSS aspect-ratio가 적용된 컨테이너의 실제 크기 사용
       const cw = Math.max(container.clientWidth || 0, MIN_WIDTH);
-      const ch = Math.max(container.clientHeight || 0, MIN_HEIGHT);
+      const ch = Math.max(container.clientHeight || 0, minHeight);
 
-      // 16:9 비율 강제 유지 (모바일에서도 일관된 비율)
+      // 선택된 비율 강제 유지
       const maxW = Math.min(cw, MAX_WIDTH);
-      const idealH = maxW / ASPECT_RATIO;
+      const idealH = maxW / aspectRatio;
       let w = maxW;
       let h = idealH;
 
       // 높이가 제한되면 너비를 비율에 맞춤
       if (ch < idealH) {
         h = ch;
-        w = h * ASPECT_RATIO;
+        w = h * aspectRatio;
         // 너비가 컨테이너를 넘지 않도록
         if (w > cw) {
           w = cw;
-          h = w / ASPECT_RATIO;
+          h = w / aspectRatio;
         }
       }
 
       w = Math.max(MIN_WIDTH, Math.floor(w));
-      h = Math.max(MIN_HEIGHT, Math.floor(h));
+      h = Math.max(minHeight, Math.floor(h));
       setSize({ w, h });
     };
 
@@ -273,7 +285,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const ro = new ResizeObserver(updateSize);
     ro.observe(container);
     return () => ro.disconnect();
-  }, []);
+  }, [aspectRatio, minHeight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -296,26 +308,55 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const gameAreaH = size.h - headerHeight;
     const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
     const numTubes = tubes.length;
-    const availableW = size.w * 0.82;
-    const availableH = gameAreaH * 0.8;
     const gapRatio = 0.28;
-    const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
-    // 가로/세로 제약 모두 고려하여 cellSize 결정 (보석과 시험관 비율 유지)
-    const cellSizeByWidth = availableW / tubeCellW;
-    const cellSizeByHeight = availableH / capacity;
-    const cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
-    const gap = cellSize * gapRatio;
-    // 보석은 정사각형으로 유지 (시험관 내부 너비 고려: 패딩 3px*2 + 테두리 약 4px = 약 10px 감소)
-    // 시험관 내부 너비 ≈ cellSize - 10, 보석은 그보다 작게 (약 70%로 조정)
+    
+    // 방향에 따라 레이아웃 계산
+    let cellSize: number;
+    let gap: number;
+    let totalW: number;
+    let totalH: number;
+    let marginX: number;
+    let marginY: number;
+    let contentTop: number;
+    let contentBottom: number;
+    
+    if (orientation === "landscape") {
+      // 가로 모드: tubes가 가로로 배열
+      const availableW = size.w * 0.82;
+      const availableH = gameAreaH * 0.8;
+      const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+      const cellSizeByWidth = availableW / tubeCellW;
+      const cellSizeByHeight = availableH / capacity;
+      cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+      gap = cellSize * gapRatio;
+      totalW = numTubes * cellSize + (numTubes - 1) * gap;
+      totalH = cellSize * capacity;
+      marginX = (size.w - totalW) / 2;
+      marginY = headerHeight + (gameAreaH - totalH) / 2;
+      const topPadding = 0.22;
+      const bottomPadding = 0.5;
+      contentTop = marginY + topPadding * cellSize;
+      contentBottom = marginY + totalH - bottomPadding * cellSize;
+    } else {
+      // 세로 모드: tubes가 세로로 배열
+      const availableW = size.w * 0.8;
+      const availableH = gameAreaH * 0.82;
+      const tubeCellH = numTubes + (numTubes - 1) * gapRatio;
+      const cellSizeByWidth = availableW / capacity;
+      const cellSizeByHeight = availableH / tubeCellH;
+      cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+      gap = cellSize * gapRatio;
+      totalW = cellSize * capacity;
+      totalH = numTubes * cellSize + (numTubes - 1) * gap;
+      marginX = (size.w - totalW) / 2;
+      marginY = headerHeight + (gameAreaH - totalH) / 2;
+      const leftPadding = 0.22;
+      const rightPadding = 0.5;
+      contentTop = marginX + leftPadding * cellSize;
+      contentBottom = marginX + totalW - rightPadding * cellSize;
+    }
+    
     const gemSize = cellSize * 0.6;
-    const totalW = numTubes * cellSize + (numTubes - 1) * gap;
-    const totalH = cellSize * capacity;
-    const marginX = (size.w - totalW) / 2;
-    const marginY = headerHeight + (gameAreaH - totalH) / 2;
-    const topPadding = 0.22;
-    const bottomPadding = 0.5;
-    const contentTop = marginY + topPadding * cellSize;
-    const contentBottom = marginY + totalH - bottomPadding * cellSize;
 
     const bg =
       getComputedStyle(document.documentElement)
@@ -590,85 +631,174 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     ctx.textAlign = "left";
 
-    const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
-
-    // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
-    // 패딩을 줄여서 모바일에서도 보석이 시험관 안에 잘 맞도록
     const tubePadding = Math.max(2, Math.min(3, cellSize * 0.05));
-    tubes.forEach((_, ti) => {
-      const left = tubeLeft(ti);
-      const tubeTop = marginY;
-      const tubeW = cellSize;
-      const tubeH = cellSize * capacity;
+    
+    if (orientation === "landscape") {
+      // 가로 모드: tubes가 가로로 배열
+      const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
 
-      // 힌트 하이라이트
-      if (hint && (hint.from === ti || hint.to === ti)) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(left - 4, tubeTop - 4, tubeW + 8, tubeH + 8);
-        ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 4;
-        ctx.shadowColor = "#ffd700";
-        ctx.shadowBlur = 12;
-        ctx.stroke();
-        ctx.restore();
-      }
+      // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
+      tubes.forEach((_, ti) => {
+        const left = tubeLeft(ti);
+        const tubeTop = marginY;
+        const tubeW = cellSize;
+        const tubeH = cellSize * capacity;
 
-      drawTube(
-        ctx,
-        left + tubePadding,
-        tubeTop + tubePadding,
-        tubeW - tubePadding * 2,
-        tubeH - tubePadding * 2
-      );
-    });
+        // 힌트 하이라이트
+        if (hint && (hint.from === ti || hint.to === ti)) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(left - 4, tubeTop - 4, tubeW + 8, tubeH + 8);
+          ctx.strokeStyle = "#ffd700";
+          ctx.lineWidth = 4;
+          ctx.shadowColor = "#ffd700";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+          ctx.restore();
+        }
 
-    // 2) 젬 그리기 (contentTop~contentBottom 안에 넣어 시험관 밖으로 안 나가게)
-    const slotHeight =
-      (contentBottom - contentTop - gemSize) / Math.max(1, capacity - 1);
-    tubes.forEach((tube, ti) => {
-      const left = tubeLeft(ti);
-      const baseX = left + (cellSize - gemSize) / 2;
-      const baseY = contentBottom - gemSize / 2;
-
-      tube.gems.forEach((color, gi) => {
-        // 이동 애니메이션 중인 출발 튜브의 맨 위 젬은 비행 중이므로 생략
-        if (
-          animatingMove &&
-          ti === animatingMove.fromIndex &&
-          gi === tube.gems.length - 1
-        )
-          return;
-        const y = baseY - gi * slotHeight;
-        drawGem(ctx, color, baseX, y, gemSize, gemSize);
-      });
-
-      if (selectedTubeIndex === ti) {
-        drawTubeSelectionGlow(
+        drawTube(
           ctx,
           left + tubePadding,
-          marginY + tubePadding,
-          cellSize - tubePadding * 2,
-          cellSize * capacity - tubePadding * 2
+          tubeTop + tubePadding,
+          tubeW - tubePadding * 2,
+          tubeH - tubePadding * 2
         );
-      }
-    });
+      });
 
-    // 3) 이동 애니메이션: 비행 중인 젬 그리기
-    if (animatingMove && animationProgress >= 0 && animationProgress <= 1) {
-      const fromLeft = tubeLeft(animatingMove.fromIndex);
-      const toLeft = tubeLeft(animatingMove.toIndex);
-      const fromX = fromLeft + (cellSize - gemSize) / 2;
-      const toX = toLeft + (cellSize - gemSize) / 2;
-      const baseY = contentBottom - gemSize / 2;
-      const fromTube = tubes[animatingMove.fromIndex];
-      const toTube = tubes[animatingMove.toIndex];
-      const fromY =
-        baseY - (fromTube ? fromTube.gems.length - 1 : 0) * slotHeight;
-      const toY = baseY - (toTube ? toTube.gems.length : 0) * slotHeight;
-      const x = fromX + (toX - fromX) * animationProgress;
-      const y = fromY + (toY - fromY) * animationProgress;
-      drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
+      // 2) 젬 그리기
+      const slotHeight =
+        (contentBottom - contentTop - gemSize) / Math.max(1, capacity - 1);
+      tubes.forEach((tube, ti) => {
+        const left = tubeLeft(ti);
+        const baseX = left + (cellSize - gemSize) / 2;
+        const baseY = contentBottom - gemSize / 2;
+
+        tube.gems.forEach((color, gi) => {
+          if (
+            animatingMove &&
+            ti === animatingMove.fromIndex &&
+            gi === tube.gems.length - 1
+          )
+            return;
+          const y = baseY - gi * slotHeight;
+          drawGem(ctx, color, baseX, y, gemSize, gemSize);
+        });
+
+        if (selectedTubeIndex === ti) {
+          drawTubeSelectionGlow(
+            ctx,
+            left + tubePadding,
+            marginY + tubePadding,
+            cellSize - tubePadding * 2,
+            cellSize * capacity - tubePadding * 2
+          );
+        }
+      });
+
+      // 3) 이동 애니메이션
+      if (animatingMove && animationProgress >= 0 && animationProgress <= 1) {
+        const fromLeft = tubeLeft(animatingMove.fromIndex);
+        const toLeft = tubeLeft(animatingMove.toIndex);
+        const fromX = fromLeft + (cellSize - gemSize) / 2;
+        const toX = toLeft + (cellSize - gemSize) / 2;
+        const baseY = contentBottom - gemSize / 2;
+        const fromTube = tubes[animatingMove.fromIndex];
+        const toTube = tubes[animatingMove.toIndex];
+        const fromY =
+          baseY - (fromTube ? fromTube.gems.length - 1 : 0) * slotHeight;
+        const toY = baseY - (toTube ? toTube.gems.length : 0) * slotHeight;
+        const x = fromX + (toX - fromX) * animationProgress;
+        const y = fromY + (toY - fromY) * animationProgress;
+        drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
+      }
+    } else {
+      // 세로 모드: tubes가 세로로 배열
+      const tubeTop = (ti: number) => marginY + ti * (cellSize + gap);
+
+      // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림 (90도 회전)
+      tubes.forEach((_, ti) => {
+        const tubeLeft = marginX;
+        const top = tubeTop(ti);
+        const tubeW = cellSize * capacity;
+        const tubeH = cellSize;
+
+        // 힌트 하이라이트
+        if (hint && (hint.from === ti || hint.to === ti)) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(tubeLeft - 4, top - 4, tubeW + 8, tubeH + 8);
+          ctx.strokeStyle = "#ffd700";
+          ctx.lineWidth = 4;
+          ctx.shadowColor = "#ffd700";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 세로 모드에서는 시험관을 90도 회전하여 그리기
+        ctx.save();
+        ctx.translate(tubeLeft + tubeW / 2, top + tubeH / 2);
+        ctx.rotate(Math.PI / 2);
+        drawTube(
+          ctx,
+          -tubeH / 2 + tubePadding,
+          -tubeW / 2 + tubePadding,
+          tubeH - tubePadding * 2,
+          tubeW - tubePadding * 2
+        );
+        ctx.restore();
+      });
+
+      // 2) 젬 그리기 (세로 모드에서는 가로로 배열)
+      const slotWidth =
+        (contentBottom - contentTop - gemSize) / Math.max(1, capacity - 1);
+      tubes.forEach((tube, ti) => {
+        const top = tubeTop(ti);
+        const baseY = top + (cellSize - gemSize) / 2;
+        const baseX = contentTop + gemSize / 2;
+
+        tube.gems.forEach((color, gi) => {
+          if (
+            animatingMove &&
+            ti === animatingMove.fromIndex &&
+            gi === tube.gems.length - 1
+          )
+            return;
+          const x = baseX + gi * slotWidth;
+          drawGem(ctx, color, x, baseY, gemSize, gemSize);
+        });
+
+        if (selectedTubeIndex === ti) {
+          ctx.save();
+          ctx.translate(marginX + (cellSize * capacity) / 2, top + cellSize / 2);
+          ctx.rotate(Math.PI / 2);
+          drawTubeSelectionGlow(
+            ctx,
+            -cellSize / 2 + tubePadding,
+            -(cellSize * capacity) / 2 + tubePadding,
+            cellSize - tubePadding * 2,
+            cellSize * capacity - tubePadding * 2
+          );
+          ctx.restore();
+        }
+      });
+
+      // 3) 이동 애니메이션 (세로 모드)
+      if (animatingMove && animationProgress >= 0 && animationProgress <= 1) {
+        const fromTop = tubeTop(animatingMove.fromIndex);
+        const toTop = tubeTop(animatingMove.toIndex);
+        const baseY = fromTop + (cellSize - gemSize) / 2;
+        const baseX = contentTop + gemSize / 2;
+        const fromTube = tubes[animatingMove.fromIndex];
+        const toTube = tubes[animatingMove.toIndex];
+        const fromX =
+          baseX + (fromTube ? fromTube.gems.length - 1 : 0) * slotWidth;
+        const toX = baseX + (toTube ? toTube.gems.length : 0) * slotWidth;
+        const x = fromX + (toX - fromX) * animationProgress;
+        const y = baseY + (toTop - fromTop) * animationProgress;
+        drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
+      }
     }
   }, [
     size,
@@ -688,6 +818,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     onHint,
     canUndo,
     hint,
+    orientation,
   ]);
 
   const getTubeIndexFromClientXY = useCallback(
@@ -698,30 +829,49 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const w = rect.width;
       const h = rect.height;
       if (w <= 0 || h <= 0) return null;
+      const x = clientX - rect.left;
       const y = clientY - rect.top;
       const headerHeight = getHeaderHeight(h);
       if (y < headerHeight) return null;
       const gameAreaH = h - headerHeight;
       const numTubes = tubes.length;
       const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
-      const availableW = w * 0.82;
-      const availableH = gameAreaH * 0.8;
       const gapRatio = 0.28;
-      const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
-      const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
-      const gap = cellSize * gapRatio;
-      const totalW = numTubes * cellSize + (numTubes - 1) * gap;
-      const marginX = (w - totalW) / 2;
-      const x = clientX - rect.left;
-      for (let ti = 0; ti < numTubes; ti++) {
-        const left = marginX + ti * (cellSize + gap);
-        if (x >= left && x <= left + cellSize) {
-          return ti;
+      
+      if (orientation === "landscape") {
+        // 가로 모드: tubes가 가로로 배열
+        const availableW = w * 0.82;
+        const availableH = gameAreaH * 0.8;
+        const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+        const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
+        const gap = cellSize * gapRatio;
+        const totalW = numTubes * cellSize + (numTubes - 1) * gap;
+        const marginX = (w - totalW) / 2;
+        for (let ti = 0; ti < numTubes; ti++) {
+          const left = marginX + ti * (cellSize + gap);
+          if (x >= left && x <= left + cellSize) {
+            return ti;
+          }
+        }
+      } else {
+        // 세로 모드: tubes가 세로로 배열
+        const availableW = w * 0.8;
+        const availableH = gameAreaH * 0.82;
+        const tubeCellH = numTubes + (numTubes - 1) * gapRatio;
+        const cellSize = Math.min(availableW / capacity, availableH / tubeCellH);
+        const gap = cellSize * gapRatio;
+        const totalH = numTubes * cellSize + (numTubes - 1) * gap;
+        const marginY = headerHeight + (gameAreaH - totalH) / 2;
+        for (let ti = 0; ti < numTubes; ti++) {
+          const top = marginY + ti * (cellSize + gap);
+          if (y >= top && y <= top + cellSize) {
+            return ti;
+          }
         }
       }
       return null;
     },
-    [tubes.length]
+    [tubes.length, orientation]
   );
 
   const getHeaderHit = useCallback(
@@ -859,7 +1009,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasAriaLabel = `${stageLabel} ${stageNumber}, ${movesLabel}: ${moves}`;
 
   return (
-    <div ref={containerRef} className="game-canvas-wrapper">
+    <div
+      ref={containerRef}
+      className="game-canvas-wrapper"
+      data-orientation={orientation}
+    >
       <canvas
         ref={canvasRef}
         className="game-canvas"

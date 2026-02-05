@@ -188,6 +188,12 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
               {t("header.installApp")}
             </button>
           )}
+          <div className="header-mobile-nav-actions">
+            <OrientationLock />
+            <SoundToggle />
+            <ThemeToggle />
+            <LanguageSelector />
+          </div>
         </div>
       )}
     </header>

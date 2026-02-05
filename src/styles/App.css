@@ -71,8 +71,7 @@ body {
   font-weight: 600;
 }
 
-.ui-toggle-button,
-.orientation-lock-button {
+.ui-toggle-button {
   position: fixed;
   z-index: 1000;
   width: 44px;
@@ -86,12 +85,33 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-md);
-}
-.ui-toggle-button {
   bottom: 80px;
   right: 16px;
 }
-.orientation-lock-button {
-  bottom: 16px;
-  right: 16px;
+
+.orientation-lock-fixed {
+  position: fixed !important;
+  top: 80px;
+  left: 16px;
+  z-index: 1000;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+/* UI 숨김 시 버튼을 상단으로 이동 */
+.app-container[data-ui-hidden="true"] .orientation-lock-fixed {
+  top: 16px;
+}
+
+/* 모바일 가로 모드에서 헤더가 작아질 때 버튼 위치 조정 */
+@media (max-height: 560px) {
+  .orientation-lock-fixed {
+    top: 60px;
+  }
+  .app-container[data-ui-hidden="true"] .orientation-lock-fixed {
+    top: 12px;
+  }
 }

@@ -15,7 +15,16 @@
   position: relative;
 }
 
-/* 모바일 가로: 높이 제한 시 높이 기준으로 16:9 유지(스테이지 선택과 동일), 스크롤 방지 */
+/* Canvas 방향에 따른 aspect-ratio 변경 */
+.game-canvas-wrapper[data-orientation="landscape"] {
+  aspect-ratio: 16 / 9;
+}
+
+.game-canvas-wrapper[data-orientation="portrait"] {
+  aspect-ratio: 9 / 16;
+}
+
+/* 모바일 가로: 높이 제한 시 높이 기준으로 비율 유지, 스크롤 방지 */
 @media (max-height: 560px) {
   .game-canvas-wrapper {
     width: auto;
@@ -23,9 +32,14 @@
     max-height: 100%;
     max-width: min(1200px, 94vw);
     min-width: 280px;
-    aspect-ratio: 16 / 9;
     min-height: 0;
     flex-shrink: 0;
+  }
+  .game-canvas-wrapper[data-orientation="landscape"] {
+    aspect-ratio: 16 / 9;
+  }
+  .game-canvas-wrapper[data-orientation="portrait"] {
+    aspect-ratio: 9 / 16;
   }
 }
 

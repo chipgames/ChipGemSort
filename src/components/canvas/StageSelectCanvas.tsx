@@ -1,8 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import { useCanvasOrientation } from "@/contexts/CanvasOrientationContext";
 import "./StageSelectCanvas.css";
 
-const COLS = 10;
-const ROWS = 5;
+const COLS_LANDSCAPE = 10;
+const ROWS_LANDSCAPE = 5;
+const COLS_PORTRAIT = 5;
+const ROWS_PORTRAIT = 10;
+const ASPECT_RATIO_LANDSCAPE = 16 / 9;
+const ASPECT_RATIO_PORTRAIT = 9 / 16;
 
 function getHeaderHeight(h: number): number {
   return Math.max(36, Math.min(56, h * 0.1));
@@ -35,6 +40,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
   onStartStage,
   onPageChange,
 }) => {
+  const { orientation } = useCanvasOrientation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -71,19 +77,38 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
-    const headerH = getHeaderHeight(size.h);
-    const paginationH = getPaginationHeight(size.h);
+    // 세로 모드일 때는 Canvas를 90도 회전하여 그리기
+    if (orientation === "portrait") {
+      ctx.save();
+      // Canvas 중심을 기준으로 90도 회전
+      ctx.translate(size.w / 2, size.h / 2);
+      ctx.rotate(Math.PI / 2);
+      // 회전 후 좌표계를 조정 (가로/세로 스왑)
+      ctx.translate(-size.h / 2, -size.w / 2);
+    }
+
+    // 세로 모드일 때는 가로/세로를 스왑하여 계산
+    const effectiveW = orientation === "portrait" ? size.h : size.w;
+    const effectiveH = orientation === "portrait" ? size.w : size.h;
+
+    const headerH = getHeaderHeight(effectiveH);
+    const paginationH = getPaginationHeight(effectiveH);
     const contentTop = headerH;
-    const contentH = size.h - headerH - paginationH;
-    const gap = Math.max(4, size.w * 0.012);
-    const availableW = size.w - gap * (COLS + 1);
+    const contentH = effectiveH - headerH - paginationH;
+    const gap = Math.max(4, effectiveW * 0.012);
+    
+    // 가로 모드 레이아웃 사용 (회전 후에도 동일한 레이아웃)
+    const COLS = COLS_LANDSCAPE;
+    const ROWS = ROWS_LANDSCAPE;
+    
+    const availableW = effectiveW - gap * (COLS + 1);
     const availableH = contentH - gap * (ROWS + 1);
     const cellW = availableW / COLS;
     const cellH = availableH / ROWS;
     const cellSize = Math.min(cellW, cellH);
     const totalGridW = COLS * cellSize + (COLS - 1) * gap;
     const totalGridH = ROWS * cellSize + (ROWS - 1) * gap;
-    const marginX = (size.w - totalGridW) / 2;
+    const marginX = (effectiveW - totalGridW) / 2;
     const marginY = contentTop + (contentH - totalGridH) / 2;
 
     const bg =
@@ -116,27 +141,27 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
         .trim() || "rgba(58,58,78,0.9)";
 
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size.w, size.h);
+    ctx.fillRect(0, 0, effectiveW, effectiveH);
 
     // Header
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size.w, headerH);
+    ctx.fillRect(0, 0, effectiveW, headerH);
     const headerGrad = ctx.createLinearGradient(0, 0, 0, headerH);
     headerGrad.addColorStop(0, "rgba(255,255,255,0.06)");
     headerGrad.addColorStop(0.5, "rgba(255,255,255,0.02)");
     headerGrad.addColorStop(1, "transparent");
     ctx.fillStyle = headerGrad;
-    ctx.fillRect(0, 0, size.w, headerH);
+    ctx.fillRect(0, 0, effectiveW, headerH);
     ctx.strokeStyle = borderColor;
-    ctx.lineWidth = Math.max(1, size.w / 600);
+    ctx.lineWidth = Math.max(1, effectiveW / 600);
     ctx.beginPath();
     ctx.moveTo(0, headerH);
-    ctx.lineTo(size.w, headerH);
+    ctx.lineTo(effectiveW, headerH);
     ctx.stroke();
 
     const fontFamily =
       "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
-    const titleFont = Math.max(14, Math.min(22, Math.round(size.w * 0.04)));
+    const titleFont = Math.max(14, Math.min(22, Math.round(effectiveW * 0.04)));
     ctx.font = `600 ${titleFont}px ${fontFamily}`;
     ctx.fillStyle = textColor;
     ctx.textAlign = "center";
@@ -144,7 +169,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     ctx.shadowColor = "rgba(0,0,0,0.3)";
     ctx.shadowOffsetY = 1;
     ctx.shadowBlur = 2;
-    ctx.fillText(title, size.w / 2, headerH / 2);
+    ctx.fillText(title, effectiveW / 2, headerH / 2);
     ctx.shadowColor = "transparent";
     ctx.shadowOffsetY = 0;
     ctx.shadowBlur = 0;
@@ -235,27 +260,27 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     }
 
     // Pagination
-    const paginationY = size.h - paginationH;
+    const paginationY = effectiveH - paginationH;
     ctx.fillStyle = bg;
-    ctx.fillRect(0, paginationY, size.w, paginationH);
+    ctx.fillRect(0, paginationY, effectiveW, paginationH);
     ctx.strokeStyle = borderColor;
     ctx.beginPath();
     ctx.moveTo(0, paginationY);
-    ctx.lineTo(size.w, paginationY);
+    ctx.lineTo(effectiveW, paginationY);
     ctx.stroke();
 
-    const btnFont = Math.max(10, Math.min(14, Math.round(size.w * 0.032)));
+    const btnFont = Math.max(10, Math.min(14, Math.round(effectiveW * 0.032)));
     ctx.font = `500 ${btnFont}px ${fontFamily}`;
     const pageText = `${currentPage} / ${totalPages}`;
     ctx.fillStyle = textSecondary;
     ctx.textAlign = "center";
-    ctx.fillText(pageText, size.w / 2, paginationY + paginationH / 2);
+    ctx.fillText(pageText, effectiveW / 2, paginationY + paginationH / 2);
 
-    const btnW = Math.max(64, size.w * 0.12);
+    const btnW = Math.max(64, effectiveW * 0.12);
     const btnH = paginationH * 0.7;
     const btnRadius = Math.min(8, btnH * 0.4);
-    const prevX = size.w / 2 - btnW * 1.2;
-    const nextX = size.w / 2 + btnW * 0.2;
+    const prevX = effectiveW / 2 - btnW * 1.2;
+    const nextX = effectiveW / 2 + btnW * 0.2;
     const btnY = paginationY + (paginationH - btnH) / 2;
 
     const drawBtn = (x: number, label: string, isHover: boolean) => {
@@ -272,6 +297,11 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     };
     drawBtn(prevX, "«", hoverBtn === "prev" && currentPage > 1);
     drawBtn(nextX, "»", hoverBtn === "next" && currentPage < totalPages);
+
+    // 세로 모드일 때 회전 복원
+    if (orientation === "portrait") {
+      ctx.restore();
+    }
   }, [
     size,
     title,
@@ -285,49 +315,87 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     hoverBtn,
     stagesPerPage,
     stageRecords,
+    orientation,
   ]);
 
   const getCellIndexFromXY = useCallback(
     (logicalX: number, logicalY: number): number | null => {
-      const headerH = getHeaderHeight(size.h);
-      const paginationH = getPaginationHeight(size.h);
-      const contentH = size.h - headerH - paginationH;
-      const gap = Math.max(4, size.w * 0.012);
-      const availableW = size.w - gap * (COLS + 1);
+      // 세로 모드일 때는 좌표를 회전 변환
+      let x = logicalX;
+      let y = logicalY;
+      let effectiveW = size.w;
+      let effectiveH = size.h;
+      
+      if (orientation === "portrait") {
+        // Canvas가 90도 시계 방향 회전되었으므로, 클릭 좌표를 회전된 좌표계로 변환
+        // 변환 공식: (x, y) -> (y, w - x)
+        const tempX = x;
+        x = y;
+        y = size.w - tempX;
+        effectiveW = size.h;
+        effectiveH = size.w;
+      }
+
+      const headerH = getHeaderHeight(effectiveH);
+      const paginationH = getPaginationHeight(effectiveH);
+      const contentH = effectiveH - headerH - paginationH;
+      const gap = Math.max(4, effectiveW * 0.012);
+      
+      // 가로 모드 레이아웃 사용
+      const COLS = COLS_LANDSCAPE;
+      const ROWS = ROWS_LANDSCAPE;
+      
+      const availableW = effectiveW - gap * (COLS + 1);
       const availableH = contentH - gap * (ROWS + 1);
       const cellW = availableW / COLS;
       const cellH = availableH / ROWS;
       const cellSize = Math.min(cellW, cellH);
       const totalGridW = COLS * cellSize + (COLS - 1) * gap;
       const totalGridH = ROWS * cellSize + (ROWS - 1) * gap;
-      const marginX = (size.w - totalGridW) / 2;
+      const marginX = (effectiveW - totalGridW) / 2;
       const marginY = headerH + (contentH - totalGridH) / 2;
 
-      const col = Math.floor((logicalX - marginX + gap / 2) / (cellSize + gap));
-      const row = Math.floor((logicalY - marginY + gap / 2) / (cellSize + gap));
+      const col = Math.floor((x - marginX + gap / 2) / (cellSize + gap));
+      const row = Math.floor((y - marginY + gap / 2) / (cellSize + gap));
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return null;
       const idx = row * COLS + col;
       if (idx >= cellCount) return null;
       return idx;
     },
-    [size, cellCount, startStage, endStage]
+    [size, cellCount, startStage, endStage, orientation]
   );
 
   const getButtonFromXY = useCallback(
     (logicalX: number, logicalY: number): "prev" | "next" | null => {
-      const paginationH = getPaginationHeight(size.h);
-      const paginationY = size.h - paginationH;
-      const btnW = Math.max(64, size.w * 0.12);
+      // 세로 모드일 때는 좌표를 회전 변환
+      let x = logicalX;
+      let y = logicalY;
+      let effectiveW = size.w;
+      let effectiveH = size.h;
+      
+      if (orientation === "portrait") {
+        // Canvas가 90도 시계 방향 회전되었으므로, 클릭 좌표를 회전된 좌표계로 변환
+        // 변환 공식: (x, y) -> (y, w - x)
+        const tempX = x;
+        x = y;
+        y = size.w - tempX;
+        effectiveW = size.h;
+        effectiveH = size.w;
+      }
+
+      const paginationH = getPaginationHeight(effectiveH);
+      const paginationY = effectiveH - paginationH;
+      const btnW = Math.max(64, effectiveW * 0.12);
       const btnH = paginationH * 0.7;
-      const prevX = size.w / 2 - btnW * 1.2;
-      const nextX = size.w / 2 + btnW * 0.2;
+      const prevX = effectiveW / 2 - btnW * 1.2;
+      const nextX = effectiveW / 2 + btnW * 0.2;
       const btnY = paginationY + (paginationH - btnH) / 2;
-      if (logicalY < btnY || logicalY > btnY + btnH) return null;
-      if (logicalX >= prevX && logicalX <= prevX + btnW) return "prev";
-      if (logicalX >= nextX && logicalX <= nextX + btnW) return "next";
+      if (y < btnY || y > btnY + btnH) return null;
+      if (x >= prevX && x <= prevX + btnW) return "prev";
+      if (x >= nextX && x <= nextX + btnW) return "next";
       return null;
     },
-    [size]
+    [size, orientation]
   );
 
   const handlePointer = useCallback(
@@ -390,6 +458,7 @@ export const StageSelectCanvas: React.FC<StageSelectCanvasProps> = ({
     <div
       ref={containerRef}
       className="stage-select-canvas-wrapper"
+      data-orientation={orientation}
       role="region"
       aria-label={title}
     >

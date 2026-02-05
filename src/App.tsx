@@ -10,6 +10,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { setupAdObserver, preventAdSenseErrors } from "@/utils/adsense";
 import { registerServiceWorker } from "@/utils/serviceWorker";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import OrientationLock from "@/components/ui/OrientationLock";
 import "@/styles/App.css";
 
 const App: React.FC = () => {
@@ -102,15 +103,18 @@ const App: React.FC = () => {
         </GameContainer>
         {!isUIHidden && <Footer />}
         {isMobile && (
-          <button
-            type="button"
-            className="ui-toggle-button"
-            onClick={toggleUI}
-            aria-label={isUIHidden ? "UI 표시" : "UI 숨김"}
-            title={isUIHidden ? "메뉴 표시" : "메뉴 숨김"}
-          >
-            {isUIHidden ? "👁️" : "🙈"}
-          </button>
+          <>
+            <button
+              type="button"
+              className="ui-toggle-button"
+              onClick={toggleUI}
+              aria-label={isUIHidden ? "UI 표시" : "UI 숨김"}
+              title={isUIHidden ? "메뉴 표시" : "메뉴 숨김"}
+            >
+              {isUIHidden ? "👁️" : "🙈"}
+            </button>
+            <OrientationLock className="orientation-lock-fixed" />
+          </>
         )}
       </div>
     </ErrorBoundary>
