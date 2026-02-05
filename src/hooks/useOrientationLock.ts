@@ -62,11 +62,24 @@ export const useOrientationLock = () => {
       if (!supported) return false;
       try {
         const orient = getOrientation();
-        if (orient?.lock) await orient.lock(type);
+        if (orient?.lock) {
+          // "any"도 시도해보기 (일부 브라우저에서 더 잘 작동)
+          try {
+            await orient.lock(type);
+          } catch (err) {
+            // 특정 방향 실패 시 "any" 시도
+            try {
+              await orient.lock("any");
+            } catch (err2) {
+              throw err; // 원래 에러 throw
+            }
+          }
+        }
         setIsLocked(true);
         setLockType(type);
         return true;
       } catch (err) {
+        // iOS Safari 등에서는 lock이 작동하지 않을 수 있음
         console.warn("Failed to lock orientation:", err);
         return false;
       }

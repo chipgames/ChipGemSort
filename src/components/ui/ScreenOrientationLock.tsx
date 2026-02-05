@@ -11,7 +11,7 @@ const STORAGE_KEY = "chipGemSort_screenOrientationLocked";
 const ScreenOrientationLock: React.FC<ScreenOrientationLockProps> = ({
   className,
 }) => {
-  const { supported, isLocked, lockType, lock, unlock } = useOrientationLock();
+  const { supported, lock, unlock } = useOrientationLock();
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return (
@@ -74,6 +74,38 @@ const ScreenOrientationLock: React.FC<ScreenOrientationLockProps> = ({
 
     applyOrientationLock();
   }, [isAutoLockEnabled, supported, isMobile, lock, unlock]);
+
+  // 고정 활성화 시 방향 변경 감지하여 자동으로 다시 고정
+  useEffect(() => {
+    if (!supported || !isMobile || !isAutoLockEnabled) return;
+
+    const handleOrientationChange = async () => {
+      // 약간의 지연 후 현재 방향으로 다시 고정 시도
+      setTimeout(async () => {
+        const currentOrientation =
+          Math.abs(window.orientation ?? screen.orientation?.angle ?? 0) === 90
+            ? "landscape"
+            : "portrait";
+        try {
+          await lock(currentOrientation);
+        } catch (err) {
+          // 조용히 실패 (너무 많은 로그 방지)
+        }
+      }, 100);
+    };
+
+    window.addEventListener("orientationchange", handleOrientationChange);
+    if (screen.orientation) {
+      screen.orientation.addEventListener("change", handleOrientationChange);
+    }
+
+    return () => {
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      if (screen.orientation) {
+        screen.orientation.removeEventListener("change", handleOrientationChange);
+      }
+    };
+  }, [supported, isMobile, isAutoLockEnabled, lock]);
 
   if (!supported || !isMobile) return null;
 

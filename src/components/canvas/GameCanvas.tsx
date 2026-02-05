@@ -304,57 +304,31 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
-    const headerHeight = getHeaderHeight(size.h);
-    const gameAreaH = size.h - headerHeight;
+    // 세로 모드일 때는 가로/세로를 스왑하여 계산
+    const effectiveW = orientation === "portrait" ? size.h : size.w;
+    const effectiveH = orientation === "portrait" ? size.w : size.h;
+    const effectiveHeaderHeight = getHeaderHeight(effectiveH);
+    const gameAreaH = effectiveH - effectiveHeaderHeight;
     const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
     const numTubes = tubes.length;
     const gapRatio = 0.28;
     
-    // 방향에 따라 레이아웃 계산
-    let cellSize: number;
-    let gap: number;
-    let totalW: number;
-    let totalH: number;
-    let marginX: number;
-    let marginY: number;
-    let contentTop: number;
-    let contentBottom: number;
-    
-    if (orientation === "landscape") {
-      // 가로 모드: tubes가 가로로 배열
-      const availableW = size.w * 0.82;
-      const availableH = gameAreaH * 0.8;
-      const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
-      const cellSizeByWidth = availableW / tubeCellW;
-      const cellSizeByHeight = availableH / capacity;
-      cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
-      gap = cellSize * gapRatio;
-      totalW = numTubes * cellSize + (numTubes - 1) * gap;
-      totalH = cellSize * capacity;
-      marginX = (size.w - totalW) / 2;
-      marginY = headerHeight + (gameAreaH - totalH) / 2;
-      const topPadding = 0.22;
-      const bottomPadding = 0.5;
-      contentTop = marginY + topPadding * cellSize;
-      contentBottom = marginY + totalH - bottomPadding * cellSize;
-    } else {
-      // 세로 모드: tubes가 세로로 배열
-      const availableW = size.w * 0.8;
-      const availableH = gameAreaH * 0.82;
-      const tubeCellH = numTubes + (numTubes - 1) * gapRatio;
-      const cellSizeByWidth = availableW / capacity;
-      const cellSizeByHeight = availableH / tubeCellH;
-      cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
-      gap = cellSize * gapRatio;
-      totalW = cellSize * capacity;
-      totalH = numTubes * cellSize + (numTubes - 1) * gap;
-      marginX = (size.w - totalW) / 2;
-      marginY = headerHeight + (gameAreaH - totalH) / 2;
-      const leftPadding = 0.22;
-      const rightPadding = 0.5;
-      contentTop = marginX + leftPadding * cellSize;
-      contentBottom = marginX + totalW - rightPadding * cellSize;
-    }
+    // 가로 모드 레이아웃 사용 (회전 후에도 동일한 레이아웃)
+    const availableW = effectiveW * 0.82;
+    const availableH = gameAreaH * 0.8;
+    const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+    const cellSizeByWidth = availableW / tubeCellW;
+    const cellSizeByHeight = availableH / capacity;
+    const cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+    const gap = cellSize * gapRatio;
+    const totalW = numTubes * cellSize + (numTubes - 1) * gap;
+    const totalH = cellSize * capacity;
+    const marginX = (effectiveW - totalW) / 2;
+    const marginY = effectiveHeaderHeight + (gameAreaH - totalH) / 2;
+    const topPadding = 0.22;
+    const bottomPadding = 0.5;
+    const contentTop = marginY + topPadding * cellSize;
+    const contentBottom = marginY + totalH - bottomPadding * cellSize;
     
     const gemSize = cellSize * 0.6;
 
@@ -383,32 +357,42 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         .getPropertyValue("--bg-card")
         .trim() || "rgba(255,255,255,0.95)";
 
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size.w, size.h);
+    // 세로 모드일 때는 전체 Canvas를 90도 회전하여 그리기
+    if (orientation === "portrait") {
+      ctx.save();
+      // Canvas 중심을 기준으로 90도 회전
+      ctx.translate(size.w / 2, size.h / 2);
+      ctx.rotate(Math.PI / 2);
+      // 회전 후 좌표계를 조정 (가로/세로 스왑)
+      ctx.translate(-size.h / 2, -size.w / 2);
+    }
 
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size.w, headerHeight);
-    const headerGrad = ctx.createLinearGradient(0, 0, 0, headerHeight);
+    ctx.fillRect(0, 0, effectiveW, effectiveH);
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, effectiveW, effectiveHeaderHeight);
+    const headerGrad = ctx.createLinearGradient(0, 0, 0, effectiveHeaderHeight);
     headerGrad.addColorStop(0, "rgba(255,255,255,0.06)");
     headerGrad.addColorStop(0.5, "rgba(255,255,255,0.02)");
     headerGrad.addColorStop(1, "transparent");
     ctx.fillStyle = headerGrad;
-    ctx.fillRect(0, 0, size.w, headerHeight);
+    ctx.fillRect(0, 0, effectiveW, effectiveHeaderHeight);
     ctx.strokeStyle = borderColor;
-    ctx.lineWidth = Math.max(1, size.w / 600);
+    ctx.lineWidth = Math.max(1, effectiveW / 600);
     ctx.beginPath();
-    ctx.moveTo(0, headerHeight);
-    ctx.lineTo(size.w, headerHeight);
+    ctx.moveTo(0, effectiveHeaderHeight);
+    ctx.lineTo(effectiveW, effectiveHeaderHeight);
     ctx.stroke();
 
-    const base = Math.min(size.w, size.h);
-    const isMobile = size.w <= 600;
+    const base = Math.min(effectiveW, effectiveH);
+    const isMobile = effectiveW <= 600;
     const titleFont = Math.max(11, Math.min(16, Math.round(base * 0.042)));
     // 모바일에서는 버튼 폰트를 더 작게
     const btnFont = isMobile
       ? Math.max(9, Math.min(12, Math.round(base * 0.032)))
       : Math.max(10, Math.min(14, Math.round(base * 0.036)));
-    const padH = size.w * 0.032;
+    const padH = effectiveW * 0.032;
     const fontFamily =
       "'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
     ctx.font = `600 ${btnFont}px ${fontFamily}`;
@@ -437,12 +421,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           Math.ceil(minWHint)
         );
     // 모바일에서는 버튼 간격을 더 줄임 (0.01 -> 0.008), 데스크톱도 줄임 (0.02 -> 0.015)
-    const btnGap = isMobile ? size.w * 0.008 : size.w * 0.015;
-    const btnTop = headerHeight * 0.1;
-    const btnH = headerHeight * 0.8;
+    const btnGap = isMobile ? effectiveW * 0.008 : effectiveW * 0.015;
+    const btnTop = effectiveHeaderHeight * 0.1;
+    const btnH = effectiveHeaderHeight * 0.8;
     const btnRadius = Math.min(10, btnH * 0.4);
 
-    const textShadowBlur = Math.max(2, size.w / 350);
+    const textShadowBlur = Math.max(2, effectiveW / 350);
     const textShadowY = 1;
 
     const drawRoundRect = (
@@ -472,13 +456,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.shadowBlur = textShadowBlur;
     ctx.shadowOffsetY = textShadowY;
     // 버튼 위치 먼저 계산 (이동 텍스트 위치 결정에 필요)
-    const retryLeft = size.w - padH - btnWidth;
-    const backLeft = size.w - padH - btnWidth - btnGap - btnWidth;
+    const retryLeft = effectiveW - padH - btnWidth;
+    const backLeft = effectiveW - padH - btnWidth - btnGap - btnWidth;
     const undoLeft = onUndo
-      ? size.w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
+      ? effectiveW - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
       : backLeft;
     const hintLeft = onHint
-      ? size.w -
+      ? effectiveW -
         padH -
         btnWidth -
         btnGap -
@@ -490,7 +474,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     ctx.font = `600 ${titleFont}px ${fontFamily}`;
     ctx.fillStyle = textColor;
-    ctx.fillText(`${stageLabel} ${stageNumber}`, padH, headerHeight / 2);
+    ctx.fillText(`${stageLabel} ${stageNumber}`, padH, effectiveHeaderHeight / 2);
     ctx.font = `500 ${titleFont}px ${fontFamily}`;
     ctx.fillStyle = textSecondary;
     // 이동 텍스트 위치: 가장 왼쪽 버튼과 겹치지 않도록 조정
@@ -498,22 +482,22 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       `${stageLabel} ${stageNumber}`
     ).width;
     const movesTextWidth = ctx.measureText(`${movesLabel}: ${moves}`).width;
-    const minMovesX = padH + stageTextWidth + size.w * 0.02; // 스테이지 텍스트와 간격
+    const minMovesX = padH + stageTextWidth + effectiveW * 0.02; // 스테이지 텍스트와 간격
     // 버튼 개수에 따라 최대 위치 조정
     const buttonCount = (onHint ? 1 : 0) + (onUndo ? 1 : 0) + 2; // 힌트 + 실행취소 + 돌아가기 + 다시하기
     const totalButtonWidth =
       buttonCount * btnWidth + (buttonCount - 1) * btnGap;
-    const btnMargin = isMobile ? size.w * 0.02 : size.w * 0.04; // 데스크톱에서 이동 텍스트가 버튼에 가려지지 않도록 여유 확보
+    const btnMargin = isMobile ? effectiveW * 0.02 : effectiveW * 0.04; // 데스크톱에서 이동 텍스트가 버튼에 가려지지 않도록 여유 확보
     const maxMovesX =
-      size.w - padH - totalButtonWidth - movesTextWidth - btnMargin;
+      effectiveW - padH - totalButtonWidth - movesTextWidth - btnMargin;
     // 데스크톱에서도 버튼 위치를 고려하여 이동 텍스트 위치 조정
     const movesX = isMobile
-      ? Math.min(padH + size.w * 0.15, maxMovesX - size.w * 0.01) // 모바일: 더 왼쪽
-      : Math.min(padH + size.w * 0.24, maxMovesX); // 데스크톱: 버튼과 충분한 간격
+      ? Math.min(padH + effectiveW * 0.15, maxMovesX - effectiveW * 0.01) // 모바일: 더 왼쪽
+      : Math.min(padH + effectiveW * 0.24, maxMovesX); // 데스크톱: 버튼과 충분한 간격
     ctx.fillText(
       `${movesLabel}: ${moves}`,
       Math.max(minMovesX, movesX),
-      headerHeight / 2
+      effectiveHeaderHeight / 2
     );
     ctx.restore();
 
@@ -539,7 +523,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.font = `500 ${btnFont}px ${fontFamily}`;
     ctx.fillStyle = textColor;
     ctx.textAlign = "center";
-    ctx.fillText(backLabel, backLeft + btnWidth / 2, headerHeight / 2);
+    ctx.fillText(backLabel, backLeft + btnWidth / 2, effectiveHeaderHeight / 2);
     ctx.restore();
 
     if (onUndo) {
@@ -562,7 +546,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.font = `500 ${btnFont}px ${fontFamily}`;
       ctx.fillStyle = canUndo ? textColor : "rgba(128,128,128,0.6)";
       ctx.textAlign = "center";
-      ctx.fillText(undoLabel, undoLeft + btnWidth / 2, headerHeight / 2);
+      ctx.fillText(undoLabel, undoLeft + btnWidth / 2, effectiveHeaderHeight / 2);
       ctx.restore();
     }
 
@@ -594,7 +578,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.font = `600 ${btnFont}px ${fontFamily}`;
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
-      ctx.fillText(hintLabel, hintLeft + btnWidth / 2, headerHeight / 2);
+      ctx.fillText(hintLabel, hintLeft + btnWidth / 2, effectiveHeaderHeight / 2);
       ctx.restore();
     }
 
@@ -626,16 +610,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.shadowOffsetY = textShadowY;
     ctx.font = `600 ${btnFont}px ${fontFamily}`;
     ctx.fillStyle = "#fff";
-    ctx.fillText(retryLabel, retryLeft + btnWidth / 2, headerHeight / 2);
+    ctx.fillText(retryLabel, retryLeft + btnWidth / 2, effectiveHeaderHeight / 2);
     ctx.restore();
 
     ctx.textAlign = "left";
 
     const tubePadding = Math.max(2, Math.min(3, cellSize * 0.05));
     
-    if (orientation === "landscape") {
-      // 가로 모드: tubes가 가로로 배열
-      const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
+    // 가로 모드 레이아웃 사용 (회전 후에도 동일한 레이아웃)
+    // 가로 모드: tubes가 가로로 배열
+    const tubeLeft = (ti: number) => marginX + ti * (cellSize + gap);
 
       // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림
       tubes.forEach((_, ti) => {
@@ -712,93 +696,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         const y = fromY + (toY - fromY) * animationProgress;
         drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
       }
-    } else {
-      // 세로 모드: tubes가 세로로 배열
-      const tubeTop = (ti: number) => marginY + ti * (cellSize + gap);
 
-      // 1) 모든 튜브를 투명 유리 시험관 형태로 먼저 그림 (90도 회전)
-      tubes.forEach((_, ti) => {
-        const tubeLeft = marginX;
-        const top = tubeTop(ti);
-        const tubeW = cellSize * capacity;
-        const tubeH = cellSize;
-
-        // 힌트 하이라이트
-        if (hint && (hint.from === ti || hint.to === ti)) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(tubeLeft - 4, top - 4, tubeW + 8, tubeH + 8);
-          ctx.strokeStyle = "#ffd700";
-          ctx.lineWidth = 4;
-          ctx.shadowColor = "#ffd700";
-          ctx.shadowBlur = 12;
-          ctx.stroke();
-          ctx.restore();
-        }
-
-        // 세로 모드에서는 시험관을 90도 회전하여 그리기
-        ctx.save();
-        ctx.translate(tubeLeft + tubeW / 2, top + tubeH / 2);
-        ctx.rotate(Math.PI / 2);
-        drawTube(
-          ctx,
-          -tubeH / 2 + tubePadding,
-          -tubeW / 2 + tubePadding,
-          tubeH - tubePadding * 2,
-          tubeW - tubePadding * 2
-        );
-        ctx.restore();
-      });
-
-      // 2) 젬 그리기 (세로 모드에서는 가로로 배열)
-      const slotWidth =
-        (contentBottom - contentTop - gemSize) / Math.max(1, capacity - 1);
-      tubes.forEach((tube, ti) => {
-        const top = tubeTop(ti);
-        const baseY = top + (cellSize - gemSize) / 2;
-        const baseX = contentTop + gemSize / 2;
-
-        tube.gems.forEach((color, gi) => {
-          if (
-            animatingMove &&
-            ti === animatingMove.fromIndex &&
-            gi === tube.gems.length - 1
-          )
-            return;
-          const x = baseX + gi * slotWidth;
-          drawGem(ctx, color, x, baseY, gemSize, gemSize);
-        });
-
-        if (selectedTubeIndex === ti) {
-          ctx.save();
-          ctx.translate(marginX + (cellSize * capacity) / 2, top + cellSize / 2);
-          ctx.rotate(Math.PI / 2);
-          drawTubeSelectionGlow(
-            ctx,
-            -cellSize / 2 + tubePadding,
-            -(cellSize * capacity) / 2 + tubePadding,
-            cellSize - tubePadding * 2,
-            cellSize * capacity - tubePadding * 2
-          );
-          ctx.restore();
-        }
-      });
-
-      // 3) 이동 애니메이션 (세로 모드)
-      if (animatingMove && animationProgress >= 0 && animationProgress <= 1) {
-        const fromTop = tubeTop(animatingMove.fromIndex);
-        const toTop = tubeTop(animatingMove.toIndex);
-        const baseY = fromTop + (cellSize - gemSize) / 2;
-        const baseX = contentTop + gemSize / 2;
-        const fromTube = tubes[animatingMove.fromIndex];
-        const toTube = tubes[animatingMove.toIndex];
-        const fromX =
-          baseX + (fromTube ? fromTube.gems.length - 1 : 0) * slotWidth;
-        const toX = baseX + (toTube ? toTube.gems.length : 0) * slotWidth;
-        const x = fromX + (toX - fromX) * animationProgress;
-        const y = baseY + (toTop - fromTop) * animationProgress;
-        drawGem(ctx, animatingMove.color, x, y, gemSize, gemSize);
-      }
+    // 세로 모드일 때 회전 복원
+    if (orientation === "portrait") {
+      ctx.restore();
     }
   }, [
     size,
@@ -829,44 +730,37 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const w = rect.width;
       const h = rect.height;
       if (w <= 0 || h <= 0) return null;
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      const headerHeight = getHeaderHeight(h);
-      if (y < headerHeight) return null;
-      const gameAreaH = h - headerHeight;
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      
+      // 세로 모드일 때는 좌표를 회전 변환
+      if (orientation === "portrait") {
+        const tempX = x;
+        x = y;
+        y = w - tempX;
+      }
+      
+      const effectiveW = orientation === "portrait" ? h : w;
+      const effectiveH = orientation === "portrait" ? w : h;
+      const effectiveHeaderHeight = getHeaderHeight(effectiveH);
+      if (y < effectiveHeaderHeight) return null;
+      const gameAreaH = effectiveH - effectiveHeaderHeight;
       const numTubes = tubes.length;
       const capacity = Math.max(4, ...tubes.map((t) => t.capacity));
       const gapRatio = 0.28;
       
-      if (orientation === "landscape") {
-        // 가로 모드: tubes가 가로로 배열
-        const availableW = w * 0.82;
-        const availableH = gameAreaH * 0.8;
-        const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
-        const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
-        const gap = cellSize * gapRatio;
-        const totalW = numTubes * cellSize + (numTubes - 1) * gap;
-        const marginX = (w - totalW) / 2;
-        for (let ti = 0; ti < numTubes; ti++) {
-          const left = marginX + ti * (cellSize + gap);
-          if (x >= left && x <= left + cellSize) {
-            return ti;
-          }
-        }
-      } else {
-        // 세로 모드: tubes가 세로로 배열
-        const availableW = w * 0.8;
-        const availableH = gameAreaH * 0.82;
-        const tubeCellH = numTubes + (numTubes - 1) * gapRatio;
-        const cellSize = Math.min(availableW / capacity, availableH / tubeCellH);
-        const gap = cellSize * gapRatio;
-        const totalH = numTubes * cellSize + (numTubes - 1) * gap;
-        const marginY = headerHeight + (gameAreaH - totalH) / 2;
-        for (let ti = 0; ti < numTubes; ti++) {
-          const top = marginY + ti * (cellSize + gap);
-          if (y >= top && y <= top + cellSize) {
-            return ti;
-          }
+      // 가로 모드 레이아웃 사용
+      const availableW = effectiveW * 0.82;
+      const availableH = gameAreaH * 0.8;
+      const tubeCellW = numTubes + (numTubes - 1) * gapRatio;
+      const cellSize = Math.min(availableW / tubeCellW, availableH / capacity);
+      const gap = cellSize * gapRatio;
+      const totalW = numTubes * cellSize + (numTubes - 1) * gap;
+      const marginX = (effectiveW - totalW) / 2;
+      for (let ti = 0; ti < numTubes; ti++) {
+        const left = marginX + ti * (cellSize + gap);
+        if (x >= left && x <= left + cellSize) {
+          return ti;
         }
       }
       return null;
@@ -884,14 +778,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const rect = canvas.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      const headerHeight = getHeaderHeight(h);
-      if (y < 0 || y >= headerHeight) return null;
-      const isMobile = w <= 600;
-      const padH = w * 0.032;
-      // 모바일에서는 버튼 크기를 줄임 (렌더링 로직과 동일하게)
-      const base = Math.min(w, h);
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      
+      // 세로 모드일 때는 좌표를 회전 변환
+      if (orientation === "portrait") {
+        const tempX = x;
+        x = y;
+        y = w - tempX;
+      }
+      
+      const effectiveW = orientation === "portrait" ? h : w;
+      const effectiveH = orientation === "portrait" ? w : h;
+      const effectiveHeaderHeight = getHeaderHeight(effectiveH);
+      if (y < 0 || y >= effectiveHeaderHeight) return null;
+      const isMobile = effectiveW <= 600;
+      const padH = effectiveW * 0.032;
+      const base = Math.min(effectiveW, effectiveH);
       const btnFont = isMobile
         ? Math.max(9, Math.min(12, Math.round(base * 0.032)))
         : Math.max(10, Math.min(14, Math.round(base * 0.036)));
@@ -914,17 +817,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             50,
             Math.ceil(Math.max(minWRetry, minWBack, minWUndo, minWHint))
           )
-        : Math.max(75, Math.round(w * 0.16));
-      const btnGap = isMobile ? w * 0.008 : w * 0.015;
-      const btnTop = headerHeight * 0.1;
-      const btnH = headerHeight * 0.8;
-      const retryLeft = w - padH - btnWidth;
-      const backLeft = w - padH - btnWidth - btnGap - btnWidth;
+        : Math.max(75, Math.round(effectiveW * 0.16));
+      const btnGap = isMobile ? effectiveW * 0.008 : effectiveW * 0.015;
+      const btnTop = effectiveHeaderHeight * 0.1;
+      const btnH = effectiveHeaderHeight * 0.8;
+      const retryLeft = effectiveW - padH - btnWidth;
+      const backLeft = effectiveW - padH - btnWidth - btnGap - btnWidth;
       const undoLeft = onUndo
-        ? w - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
+        ? effectiveW - padH - btnWidth - btnGap - btnWidth - btnGap - btnWidth
         : backLeft;
       const hintLeft = onHint
-        ? w -
+        ? effectiveW -
           padH -
           btnWidth -
           btnGap -

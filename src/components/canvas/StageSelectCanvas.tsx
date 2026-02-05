@@ -4,10 +4,6 @@ import "./StageSelectCanvas.css";
 
 const COLS_LANDSCAPE = 10;
 const ROWS_LANDSCAPE = 5;
-const COLS_PORTRAIT = 5;
-const ROWS_PORTRAIT = 10;
-const ASPECT_RATIO_LANDSCAPE = 16 / 9;
-const ASPECT_RATIO_PORTRAIT = 9 / 16;
 
 function getHeaderHeight(h: number): number {
   return Math.max(36, Math.min(56, h * 0.1));
