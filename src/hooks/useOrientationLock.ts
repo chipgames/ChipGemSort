@@ -58,19 +58,24 @@ export const useOrientationLock = () => {
   }, [supported]);
 
   const lock = useCallback(
-    async (type: "portrait" | "landscape"): Promise<boolean> => {
+    async (
+      type: "portrait" | "landscape",
+      options?: { skipFullscreen?: boolean }
+    ): Promise<boolean> => {
       if (!supported) return false;
       try {
         const orient = getOrientation();
         if (orient?.lock) {
-          // 전체 화면 모드 진입 시도 (일부 브라우저에서는 전체 화면에서만 작동)
-          try {
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-              await document.documentElement.requestFullscreen();
+          // 사용자 제스처 없이 호출될 때는 풀스크린 생략 (PWA 초기·화면 복귀 시)
+          const skipFs = options?.skipFullscreen === true;
+          if (!skipFs) {
+            try {
+              if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                await document.documentElement.requestFullscreen();
+              }
+            } catch (fsErr) {
+              console.warn("Fullscreen request failed, continuing:", fsErr);
             }
-          } catch (fsErr) {
-            // 전체 화면 실패해도 계속 진행
-            console.warn("Fullscreen request failed, continuing:", fsErr);
           }
 
           // lock 타입: "-primary" 접미사 사용

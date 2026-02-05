@@ -44,26 +44,32 @@ const ScreenOrientationLock: React.FC<ScreenOrientationLockProps> = ({
     };
   }, []);
 
+  const applyLock = React.useCallback(
+    async (opts?: { skipFullscreen?: boolean }) => {
+      if (!supported || !isMobile) return;
+      const currentOrientation =
+        Math.abs(window.orientation ?? screen.orientation?.angle ?? 0) === 90
+          ? "landscape"
+          : "portrait";
+      try {
+        await lock(currentOrientation, opts);
+      } catch (err) {
+        console.warn("Failed to lock orientation:", err);
+      }
+    },
+    [supported, isMobile, lock]
+  );
+
   // 자동 고정 설정 변경 시
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(isAutoLockEnabled));
-    
+
     if (!supported || !isMobile) return;
 
-    const applyOrientationLock = async () => {
+    const run = async () => {
       if (isAutoLockEnabled) {
-        // 고정 활성화: 현재 방향으로 고정
-        const currentOrientation =
-          Math.abs(window.orientation ?? screen.orientation?.angle ?? 0) === 90
-            ? "landscape"
-            : "portrait";
-        try {
-          await lock(currentOrientation);
-        } catch (err) {
-          console.warn("Failed to lock orientation:", err);
-        }
+        await applyLock();
       } else {
-        // 고정 해제
         try {
           await unlock();
         } catch (err) {
@@ -71,41 +77,98 @@ const ScreenOrientationLock: React.FC<ScreenOrientationLockProps> = ({
         }
       }
     };
+    run();
+  }, [isAutoLockEnabled, supported, isMobile, lock, unlock, applyLock]);
 
-    applyOrientationLock();
-  }, [isAutoLockEnabled, supported, isMobile, lock, unlock]);
+  // PWA/게임 접근 시 초기 고정: 여러 시점에 재시도 (API 준비·탭 활성화 타이밍 대응)
+  const INITIAL_LOCK_DELAYS = [200, 600, 1200, 2500];
+  useEffect(() => {
+    if (!isMobile || !isAutoLockEnabled) return;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    INITIAL_LOCK_DELAYS.forEach((ms) => {
+      const t = setTimeout(() => {
+        if (!supported) return;
+        applyLock({ skipFullscreen: true });
+      }, ms);
+      timeouts.push(t);
+    });
+    return () => timeouts.forEach((t) => clearTimeout(t));
+  }, [isMobile, isAutoLockEnabled, supported, applyLock]);
+
+  // 앱이 다시 보일 때(화면 껐다 켜기·잠금 해제 후 복귀) 고정 재적용 — 재시도로 확실히 적용
+  const RESUME_LOCK_DELAYS = [50, 300, 700, 1500];
+  useEffect(() => {
+    if (!supported || !isMobile || !isAutoLockEnabled) return;
+
+    const scheduleReapply = () => {
+      const timeouts: ReturnType<typeof setTimeout>[] = [];
+      RESUME_LOCK_DELAYS.forEach((ms) => {
+        timeouts.push(setTimeout(() => applyLock({ skipFullscreen: true }), ms));
+      });
+      return () => timeouts.forEach((t) => clearTimeout(t));
+    };
+
+    let cancel: (() => void) | null = null;
+
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      cancel?.();
+      cancel = scheduleReapply();
+    };
+
+    const onFocus = () => {
+      if (document.visibilityState !== "visible") return;
+      cancel?.();
+      cancel = scheduleReapply();
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      cancel?.();
+    };
+  }, [supported, isMobile, isAutoLockEnabled, applyLock]);
 
   // 고정 활성화 시 방향 변경 감지하여 자동으로 다시 고정
   useEffect(() => {
     if (!supported || !isMobile || !isAutoLockEnabled) return;
 
-    const handleOrientationChange = async () => {
-      // 약간의 지연 후 현재 방향으로 다시 고정 시도
-      setTimeout(async () => {
-        const currentOrientation =
-          Math.abs(window.orientation ?? screen.orientation?.angle ?? 0) === 90
-            ? "landscape"
-            : "portrait";
+    const run = () => {
+      let cleared = false;
+      const id = setTimeout(async () => {
+        if (cleared) return;
         try {
-          await lock(currentOrientation);
+          await applyLock({ skipFullscreen: true });
         } catch (err) {
-          // 조용히 실패 (너무 많은 로그 방지)
+          // 조용히 실패
         }
       }, 100);
+      return () => {
+        cleared = true;
+        clearTimeout(id);
+      };
     };
 
-    window.addEventListener("orientationchange", handleOrientationChange);
+    let cleanup: (() => void) | undefined;
+    const handler = () => {
+      cleanup = run();
+    };
+
+    window.addEventListener("orientationchange", handler);
     if (screen.orientation) {
-      screen.orientation.addEventListener("change", handleOrientationChange);
+      screen.orientation.addEventListener("change", handler);
     }
 
     return () => {
-      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("orientationchange", handler);
       if (screen.orientation) {
-        screen.orientation.removeEventListener("change", handleOrientationChange);
+        screen.orientation.removeEventListener("change", handler);
       }
+      cleanup?.();
     };
-  }, [supported, isMobile, isAutoLockEnabled, lock]);
+  }, [supported, isMobile, isAutoLockEnabled, applyLock]);
 
   if (!supported || !isMobile) return null;
 
