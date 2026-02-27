@@ -48,6 +48,19 @@
     <meta name="apple-mobile-web-app-title" content="ChipGemSort" />
     <meta name="theme-color" content="#a8b5ff" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-6YWBR3HNQX"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-6YWBR3HNQX");
+    </script>
     <!-- AdSense는 프로덕션에서만 동적 로드 (App.tsx). localhost에서는 로드하지 않아 Tracking Prevention 오류 방지 -->
     <meta
       name="description"
